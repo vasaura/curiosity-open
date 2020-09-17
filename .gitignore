@@ -1,0 +1,10 @@
+.idea/
+venv/
+env/
+.DS_Store
+__pycache__
+.vscode/
+curiosity/static/images/Photos_BDD
+.flaskenv
+log
+Annexes/

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+ <div class="container small">
+             <!--Titres  -->
+             <header class="page-header">
+                  <h3 class="pb-2 mt-3"><small class="text-muted">Glossaire de professions</small></h3>
+             </header>
+
+       <table id="curiosity" class="table" style="width:100%">
+          <thead>
+              <tr>
+                <th>Métier déclaré</th>
+                <th>Catégorie</th>
+                <th>Souscatégorie</th>
+              </tr>
+          </thead>
+          <tbody>
+          {% for glossaire in glossaireMetiers%}
+              <tr>
+              <td>
+                  {{ glossaire[0] }}
+              </td>
+              <td>
+                  {{ glossaire[1] }}
+              </td>
+                  {% if glossaire[2] %}
+               <td>
+                  {{ glossaire[2] }}
+              </td>
+                  {% else %}
+              <td> -- </td>
+                 {% endif %}
+               </tr>
+          {% endfor %}
+
+          </tbody>
+        </table>
+
+ </div>
+
+    </div>
+
+
+ {% block scripts %}
+     <script>
+      $(document).ready(function() {
+                $('#curiosity').DataTable( {
+                    "language": {
+                        "url": "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+                    }
+                } );
+            } );
+     </script>
+{% endblock %}
+{% endblock %}

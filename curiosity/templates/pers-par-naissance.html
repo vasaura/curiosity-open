@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container">
+
+        <p class="lead">Il y a <strong>{{persParNaissance.total}}</strong> personnes nées dans la ville : {{ villeNaissance.nomLieu }}</p>  <!--.total fait partie de la méthode paginate-->
+
+        <table>
+          <tr>
+            <th>Nom</th>
+            <th>Prenom</th>
+          </tr>
+             {% for pers in persParNaissance.items %} <!--.items nécessaire pour itérer dans le cas d'utilisation de la méthode paginate-->
+              <tr>
+                  <td>
+                      {% if pers[1] %}
+                      <a href="{{url_for('notice', identifier=pers[0])}}">{{ pers[1] }}</a>
+                        {% else %}
+                      <a href="{{url_for('notice', identifier=pers[0])}}">non identifé</a>
+                        {% endif %}
+                  </td>
+
+                  <td>{% if pers[2]  %}
+                      {{ pers[2] }}
+                        {% else %}
+                      non identifé
+                        {% endif %}
+                  </td>
+              </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="container">
+            <div class="mt-4">
+                <nav aria-label="research-pagination">
+                    <ul class="pagination justify-content-center">
+                    {% if persParNaissance.has_prev %}
+                     <li class="page-item">
+                         <a class="page-link" href="{{ url_for('persParNaissance', page=persParNaissance.prev_num, id_villeNaissance = villeNaissance.id) }}">Précédent</a> <!-- Le lien URL est du type http:...../index?page=2-->
+                     </li>
+                    {% endif %}
+                    {% for i in persParNaissance.iter_pages(left_current=2, right_current=5) %} <!-- boucle sur toutes les pages potentielles des personnes-->
+                       {% if i %}
+                               {% if i != persParNaissance.page %} <!-- Si chaque page est diférente de la page actuelle (récupérer par le parametre page de l'objet personnes)-->
+                               <li class="page-item">
+                                <a class="page-link" href="{{ url_for('persParNaissance', id_villeNaissance = villeNaissance.id, page=i) }}">{{i}}</a> <!-- Le lien URL est du type http:...../index?page=2-->
+                              </li>
+                                {% else %}
+                              <li class="page-item active disabled">
+                                <a class="page-link">Page {{i}}</a>
+                              </li>
+                                {% endif %}
+                        {% else %}
+                             <li class="page-item disabled">
+                              <a class="page-link">...</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                     {% if persParNaissance.has_next %}
+                     <li class="page-item">
+                         <a class="page-link" href="{{ url_for('persParNaissance', page=persParNaissance.next_num, id_villeNaissance = villeNaissance.id) }}">Suivant</a> <!-- Le lien URL est du type http:...../index?page=2-->
+                     </li>
+                    {% endif %}
+                </ul>
+               </nav>
+          </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<form class="container" method="POST" id="modificationPlaceFormId" action="{{url_for("modifier_lieu", id_lieu= lieu_origine.id)}}">
+      <div class="row">
+          <div class="col-12"> <header class="page-header"><h2>Page de modification du lieu suivant <small class="text-muted">{{ lieu_origine.nomLieuFr }}</small></h2></header></div>
+      </div>
+      <div class="form-group">
+         <label for="nomLieu">Nom du lieu <small style="color: #bd2130">(choisir l'option "city, village...")</small></label>
+        <input type="text" class="form-control" id="nomLieu" name="nomLieu" maxlength="64" value="{{ lieu_origine.nomLieuFr }}">
+      </div>
+     <div class="form-group">
+        <label for="pays">Pays</label>
+        <input type="text" class="form-control" id="pays" name="pays" maxlength="20" value="{{ lieu_origine.pays }}">
+      </div>
+    <div class="form-group">
+        <label for="region">Région</label>
+        <input type="text" class="form-control" id="region" name="region" maxlength="20" value="{{ lieu_origine.region or ''}}">
+      </div>
+    <div class="form-group">
+        <label for="depart">Département</label>
+        <input type="text" class="form-control" id="depart" name="depart" maxlength="20" value="{{ lieu_origine.departement or ''}}">
+      </div>
+      <div class="form-group">
+        <label for="lat">Latitude</label>
+        <input type="text" class="form-control" id="lat" name="latitude" maxlength="64" value="{{ lieu_origine.lat }}" onchange="updateMap()">
+      </div>
+      <div class="form-group">
+        <label for="lng">Longitude</label>
+        <input type="text" class="form-control" id="lng" name="longitude" maxlength="64" value="{{ lieu_origine.lng }}" onchange="updateMap()">
+      </div>
+      <div class="form-group">
+          <label for="codeINSEE">Code INSEE (pour les localités françaises)</label>
+          <p><small class="text-muted">(connectez-vous au <a href="https://public.opendatasoft.com/explore/dataset/correspondance-code-insee-code-postal/information/" target="_blank">site de l'INSEE)</a></small></p>
+        <input type="text" class="form-control" id="codeINSEE" name="codeINSEE" maxlength="64" value="{{ lieu_origine.codeINSEE  or ''}}">
+      </div>
+      <div class="form-group">
+        <label for="idGeonames">Identifiant Geonames</label>
+        <input type="text" class="form-control" id="idGeonames" name="idGeonames" maxlength="64" value="{{ lieu_origine.id_geonames or ''}}">
+      </div>
+
+      <div id="map" style="height: 400px; width: 700px;"></div>
+
+        <button type="submit" class="btn btn-primary mt-3">Modifier</button>
+</form>
+
+
+  {% block scripts %}
+  <script>
+    var map = L.map('map', {center: [48.69096,  9.14062],zoom: 4});
+    var theMarker = {};
+    L.tileLayer( 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: ['a','b','c']
+        }).addTo( map );
+
+    $('#nomLieu').autocomplete({
+
+    source : function(requete, reponse){ // les deux arguments représentent les données nécessaires au plugin
+	  $.ajax({
+            url : 'http://api.geonames.org/searchJSON', // on appelle le script JSON
+            dataType : 'json', // on spécifie bien que le type de données est en JSON
+            data : {
+                name_startsWith : requete.term, // on donne la chaîne de caractère tapée dans le champ de recherche Nom lieu
+                username : 'vasaura', // à remplacer par un username caché (enregistré dans la base)
+                maxRows : 10, // nr d'éléments affichés
+                lang : 'fr' // param lang pour avoir la version des noms en fr
+            },
+
+            success : function(donnee){
+                reponse($.map(donnee.geonames, function(item){
+                    return {
+                      label: item.name + (item.adminName1 ? ", " + item.adminName1 : "") + ", " + item.countryCode +", " + item.fclName, // affiche les 4 éléments: lieu, region, code pays et type lieu. Pour le département il y a une condition
+                                    // (item.adminName1 ? ", " + item.adminName1 : "") : si item.adminName1 (?) alors ","+ item.adminName1, sinon (:)  ""
+						value: item.name,
+                        lat: item.lat,
+                        lng: item.lng,
+                        pays: item.countryName,
+                        region: item.adminName1,
+                      geonameId : item.geonameId
+                    }
+                }));
+            }
+        });
+    },
+        select : function(event, ui){ // lors de la sélection d'une proposition on rajoute dans les inputs automatiquement
+        $( '#lat' ).val( ui.item.lat );
+        $( '#lng' ).val( ui.item.lng);
+        $( '#pays' ).val( ui.item.pays);
+        $( '#region' ).val( ui.item.region);
+        $( '#idGeonames' ).val( ui.item.geonameId);
+        regenerateMap(ui.item.lat, ui.item.lng)
+    }
+});
+
+   function updateMap() {
+       var lat = document.getElementById("lat");
+       var lng = document.getElementById("lng");
+       regenerateMap(lat, lng)
+   };
+
+   function regenerateMap (lat, long) {
+       map.setView([lat, long], 10);
+       if (theMarker != undefined) {
+           map.removeLayer(theMarker);
+       };
+       theMarker = L.marker([lat,long]).addTo(map);
+   }
+     removeEnterSubmit ("modificationPlaceFormId")
+  </script>
+  {% endblock %}
+{% endblock %}

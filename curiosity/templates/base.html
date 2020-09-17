@@ -1,0 +1,121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+	<html lang="fr" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="icon" type="image/png" href="../static/images/joueurOrgue.png" />
+            {% if title %}
+            <title>{{ title }} - Spectacle de curiosités</title>
+            {% else %}
+            <title>Welcome to Spectacle de curiosités</title>
+            {% endif %}
+            {% include "partials/css.html" %}
+            {% include "partials/metadata.html" %}
+    </head>
+
+<body>
+<div class="container-fluid pt-3">
+    <nav class="navbar navbar-expand navbar-light justify-content-between" style="background-color: #e6e6e6;">
+        <img src="../static/images/joueurOrgue.png" class=img-responsive alt="dessin joueur d'orgue" width="45" height="70" align="left"/>
+        <a class="navbar-brand" href="{{ url_for('intro') }}">Spectacle de curiosités</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav mr-auto">
+                 <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('projet')}}">Projet</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('index')}}">Liste de personnes</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('catProfession')}}">Catégories professionnelles</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Lieux</a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item" href="{{ url_for('passage')}}">Lieu d'enregistrement</a>
+                    <a class="dropdown-item" href="{{ url_for('naissance')}}">Lieu de naissance</a>
+                </div>
+              </li>
+            </ul>
+            <ul class="navbar-nav right">
+             <li class="nav-item">
+                 {% if current_user.is_anonymous %}
+             <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('login') }}">Connexion</a>
+              </li>
+
+             {% else %}
+              <li class="nav-item">
+                 <a class="nav-link" href="{{ url_for('logout') }}">Déconnexion ({{ current_user.prenom }}, {{ current_user.nom }}) </a>
+              {% endif %}
+                 </li>
+            <li>
+              <form class="form-inline" action="{{url_for("recherche")}}" method="GET">
+                <input class="form-control" name="keyword" type="search" placeholder="Rechercher" aria-label="Recherche">
+                <button class="btn btn-secondary" type="submit"><i class="fa fa-search"></i></button>
+              </form>
+             </li>
+
+            </ul>
+        </div>
+    </nav>
+    {% if current_user.is_authenticated %}
+        <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+          <ul class="navbar-nav">
+            <li class="nav-item active">
+              <a class="nav-link" href="{{ url_for('creer_personne') }}">Créer une nouvelle personne</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('creer_lieu') }}">Créer un nouveau lieu</a>
+            </li>
+          </ul>
+        </nav>
+    {% endif %}
+</div>
+<div class="container pt-3">
+       {% with messages = get_flashed_messages(with_categories=True, category_filter=()) %}
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message[0] == "warning" %}
+                        <div class="alert alert-warning">{{ message[1] }}</div>
+                    {% elif message[0] == "error" %}
+                        <div class="alert alert-danger">{{ message[1] }}</div>
+                     {% elif message[0] == "success" %}
+                         <div class="alert alert-success">{{ message[1] }}</div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+       {% endwith %}
+</div>
+
+     {% block content%} {% endblock %}
+
+<div class="container-fluid pb-3">
+     <div class="mt-4">
+         <footer class="footer" style="background-color: #a1b7ce;">
+                <div class="row justify-content-md-center">
+                        <div class="col col-2"><a href="https://github.com/vasaura/curiosites" class="text-secondary" target="_blank">  <i class="fab fa-github"></i> Github</a></div>
+                        <div class="col col-2"><a href="{{ url_for("credits") }}" class="text-secondary">Crédits</a></div>
+                </div>
+         </footer>
+        <footer class="footer" style="background-color: #e6e6e6;">
+                    <div class="container py-3">
+                        <div class="row justify-content-md-center">
+                            <div class="col col-2"><p><a href="https://www.uca.fr/" target="_blank"><img src="../static/images/uca.png" class="img-responsive rounded float-left" alt="logo uca" width="70" height="70"></a></p></div>
+                             <div class="col col-2"><p><a href="http://chec.uca.fr/" target="_blank"><img src="../static/images/chec.png" class="img-responsive rounded float-left" alt="logo chec" width="70" height="70"></a></p></div>
+                            <div class="col col-2"><p><a href="http://msh-clermont.fr/" target="_blank"><img src="../static/images/logoMSH.png" class="img-responsive rounded float-left" alt="logo msh" width="130" height="70"></a></p></div>
+                            <div class="col col-2"><p><a href="http://www.cnrs.fr/" target="_blank"><img src="../static/images/cnrs.png" class="img-responsive rounded float-left" alt="logo msh" width="70" height="70"></a></p></div>
+         	                <div class="col col-2"><p><a href="http://www.iufrance.fr/" target="_blank"><img src="../static/images/iufLogo.png" class="img-responsive rounded float-left pl-3" alt="logo iuf" width="180" height="60"></a></p></div>
+                        </div>
+                    </div>
+        </footer>
+    </div>
+</div>
+</body>
+</html>

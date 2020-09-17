@@ -1,0 +1,880 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <!-- Afficher le code de la personne Methode GET-->
+        <form class="container" method="GET">
+            <div class="row">
+                <div class="col-12"> <header class="page-header"><h2>Page de création d'un nouvel enregistrement pour  <small class="text-muted"> {{personneUnique.nom}}, {{personneUnique.prenom}}</small></h2></header></div>
+            </div>
+            <div class="row">
+             <div class="col-4"> <p class="font-weight-bold">Code unique de la personne</div>
+             <div class="col-8">{{personneUnique.id}}</div>
+            </div>
+         </form>
+
+    <!-- The Modal -->
+     <div class="container">
+
+        <div class="modal fade" aria-labelledby="myLargeModalLabel" id="myModalPlace" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+              <h4 class="modal-title">Création d'un nouveau lieu</h4>
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body ui-front">
+
+                <form class="container" method="POST" id="creationPlaceFormId">
+                     <div class="form-group">
+                          <label for="nomLieu">Nom du lieu <small style="color: #bd2130">(choisir l'option "city, village...")</small></label>
+                        <input type="text" class="form-control" id="nomLieu" name="nomLieu" maxlength="64" placeholder="ex : Villers-Cotterêts">
+                      </div>
+                     <div class="form-group">
+                        <label for="pays">Pays</label>
+                        <input type="text" class="form-control" id="pays" name="pays" maxlength="20" placeholder="ex : France">
+                      </div>
+                     <div class="form-group">
+                            <label for="region">Région</label>
+                            <input type="text" class="form-control" id="region" name="region" maxlength="20" placeholder="ex : France">
+                          </div>
+                     <div class="form-group">
+                            <label for="depart">Département</label>
+                            <input type="text" class="form-control" id="depart" name="depart" maxlength="20" placeholder="ex : France">
+                          </div>
+                     <div class="form-group">
+                        <label for="lat">Latitude</label>
+                        <input type="text" class="form-control" id="lat" name="latitude" maxlength="64" placeholder="ex : 49.25311" onchange="updateMap()">
+                      </div>
+                     <div class="form-group">
+                        <label for="lng">Longitude</label>
+                        <input type="text" class="form-control" id="lng" name="longitude" maxlength="64" placeholder="ex : 3.09003" onchange="updateMap()">
+                      </div>
+                     <div class="form-group">
+                          <label for="codeINSEE">Code INSEE (pour les localités françaises)</label>
+                          <p><small class="text-muted">(connectez-vous au <a href="https://public.opendatasoft.com/explore/dataset/correspondance-code-insee-code-postal/information/" target="_blank">site de l'INSEE)</a></small></p>
+                        <input type="text" class="form-control" id="codeINSEE" name="codeINSEE" maxlength="64" placeholder="ex : 02810">
+                      </div>
+                     <div class="form-group">
+                        <label for="idGeonames">Identifiant Geonames</label>
+                        <input type="text" class="form-control" id="idGeonames" name="idGeonames" maxlength="64" placeholder="ex : 2968405">
+                      </div>
+
+                     <div id="map" style="height: 400px; width: 700px;"></div>
+
+                             <!-- Modal footer -->
+                     <div class="modal-footer">
+                           <button type="button" id ="closeModal" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                           <button type="button" id="idBtnSavePlace" class="btn btn-primary">Sauvegarder</button>
+                     </div>
+                </form>
+
+                <div id="successAlert" class="alert alert-success" role="alert" style="display:none;"></div>
+                <div id="errorAlert" class="alert alert-danger" role="alert" style="display:none;"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+        <!-- Afficher les chmaps à compléter -->
+        <form class="container-fluid" method="POST" id="creationFormId" action="{{url_for("creer_registre", idPersonne=personneUnique.id)}}">
+
+        <!-- Formulaire avec les sources et les commentaires -->
+        <div class="card bg-light mb-3" style="max-width: 100rem;">
+              <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#sourcesAndComment" aria-controls="sourcesAndComment">Ajouter les sources d'archives</div>
+                <div class="collapse" id="sourcesAndComment">
+                     <div class="card card-body">
+                            <div class="form-group required">
+                             <label for="archive">Nom de l'institution de conservation de la source</label>
+                             <input type="text" class="form-control" id="archive" name="archive" placeholder="ex : BOURG-EN-BRESSE-Archives municipales" value="{{ registreTemporaire["nomArchive"] }}">
+                            </div>
+
+                           <div class="form-group required">
+                            <label for="cote">Cote</label>
+                            <input type="text" class="form-control" id="cote" name="cote" placeholder="ex : AM Agen 2i20" value="{{ registreTemporaire["cote"] }}">
+                           </div>
+
+                           <div class="form-group">
+                            <label for="typeDoc">Type du document</label>
+                            <input type="text" class="form-control" id="typeDoc" maxlength="64" name="typeDoc" placeholder="ex : Registre visas" value="{{ registreTemporaire["natureDoc"] }}">
+                           </div>
+
+                           <div class="form-group">
+                            <label for="photo">Numéro de la photo</label>
+                            <input type="text" class="form-control" id="photo" maxlength="64" name="photo" placeholder="ex : AM_Agen_2i20_7386" value="{{ registreTemporaire["photoArchive"] }}">
+                           </div>
+
+                          <div class="form-group">
+                            <label for="commentaires">Commentaires et observations</label>
+                            <textarea class="form-control" id="commentaires" name="commentaires" rows="3">{{ registreTemporaire["commentaires"] }}</textarea>
+                        </div>
+                     </div>
+                 </div>
+            </div>
+
+         <!-- Formulaire avec les elements d'identification -->
+         <div class="card bg-light mb-3" style="max-width: 100rem;">
+             <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#identification" aria-controls="identification">Ajouter les élements d'identification</div>
+               <div class="collapse" id="identification">
+                      <div class="card card-body">
+                            <!-- Lieu et date passage -->
+                            <div class="form-row">
+                                  <div class="form-group col-md-6 required">
+                                    <label for="lieuPassage">Lieu d'enregistrement administratif</label>
+                                      <div class="input-container-curiosity" id="idContainerLieuNormaliser0">
+                                         <input autocomplete="off" type="text" class="form-control" id="idLieuNormaliser0" name="lieuPassage" value="{{ registreTemporaire["lieuPassage"] }}" onblur="myFunctionBlurFocus(value, id, 0)">
+                                      </div>
+                                  </div>
+
+                                  <div class="form-group col-md-6 required">
+                                     <label for="datePassage">Date d'enregistrement</label>
+                                     <input type="date" class="form-control" id="dataPassage" name="datePassage"  value="{{ registreTemporaire["dateEnregistremnt"] }}" >
+                                  </div>
+                              </div>
+                            <!-- Nom Prénom-->
+                            <div class="form-row">
+                                  <!-- Nom -->
+                                  <div class="form-group col-md-6">
+                                    <label for="nom">Nom déclaré</label>
+                                    <input type="text" class="form-control" id="nom" name="nom" maxlength="128" placeholder="ex : Abello" value="{{ registreTemporaire["nomOrigine"] }}">
+                                  </div>
+                                   <!-- Prenom -->
+                                  <div class="form-group col-md-6">
+                                    <label for="prenom">Prénom déclaré</label>
+                                    <input type="text" class="form-control" id="prenom" name="prenom" maxlength="128" placeholder="ex : Marie" value="{{ registreTemporaire["prenomOrigine"] }}">
+                                  </div>
+                             </div>
+                            <!--  Numéro d'ordre-->
+                             <div class="form-row">
+                                 <div class="form-group col-md-6">
+                                    <label for="ordre">Numéro d'enregistrement ou nr d'ordre</label>
+                                    <input type="text" class="form-control" id="ordre" name="ordre" maxlength="128" placeholder="ex : 2345*" value="{{ registreTemporaire["nrOrdre"] }}">
+                                 </div>
+
+                             </div>
+                            <!--Pseudonyme-->
+                             <div class="form-row">
+                                 <div class="form-group col-md-6">
+                                    <label for="pseudo">Pseudonyme</label>
+                                    <input type="text" class="form-control" id="pseudo" name="pseudo" maxlength="128" placeholder="ex : Colo" value="{{ registreTemporaire["pseudonyme"] }}">
+                                  </div>
+                             </div>
+                       </div>
+                </div>
+         </div>
+
+        <!-- Formulaire avec la description de la personne-->
+        <div class="card bg-light mb-3" style="max-width: 100rem;">
+            <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#champsPersonDescription" aria-controls="champsPersonDescription">Ajouter des éléments de description générale de la personne</div>
+                <div class="collapse" id="champsPersonDescription">
+                  <div class="card card-body">
+                     <div class="form-row">
+                         <div class="col-md-1"></div>
+                            <!--taille-->
+                          <div class="form-group">
+                            <label for="taille">Taille de la personne</label>
+                            <input type="text" class="form-control col-md-6" id="taille" name="taille" placeholder="ex : 1.62" value="{{ registreTemporaire["taillePersonne"] }}">
+                          </div>
+                            <!--Age-->
+                          <div class="form-group">
+                            <label for="age">Age de la personne</label>
+                            <input type="number" class="form-control col-md-6" id="age" name="age" placeholder="ex : 40" value="{{ registreTemporaire["agePersonne"] }}">
+                          </div>
+                        </div>
+                       <div class="form-group">
+                            <label for="duree">Durée du séjour</label>
+                            <input type="text" class="form-control" id="duree" name="duree" maxlength="12" placeholder="ex : 2 jours" value="{{ registreTemporaire["dureeSejour"] }}">
+                          </div>
+
+                      <!-- Autres caractéristiques-->
+                      <div class="form-group">
+                        <label for="autreCarr">Autres caractéristiques</label>
+                        <input type="text" class="form-control" id="autreCarr" name="autreCarr" placeholder="ex : veuve" value="{{ registreTemporaire["autresCaracteristiques"] }}">
+                      </div>
+
+                      <!-- description générales-->
+                     <div class="form-group">
+                        <label for="description">Description générale</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ registreTemporaire["description"] }}</textarea>
+                     </div>
+                  </div>
+                </div>
+        </div>
+
+        <!-- Formulaire avec les métiers -->
+         <div class="card bg-light mb-3" style="max-width: 100rem;">
+          <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#champsPersonMetiers" aria-controls="champsPersonMetiers">Ajouter les metiers de la personne</div>
+                 <div class="collapse" id="champsPersonMetiers">
+                     <div class="card card-body containerCatSouscat" id = "containerCatSouscat">
+
+                         <!-- Metier déclaré-->
+                          <div class="form-group col-md-12">
+                                <label for="metier" class="font-weight-bold small">Métiers déclarés</label>
+                                <input type="text" class="form-control" id="metier" name="metier" maxlength="100" placeholder="ex : violoniste faisant voir des figures en cire aux athées" value="{{ registreTemporaire["professionOrigine"] }}">
+                          </div>
+
+                     {% if not registreTemporaire["catSoucat"]%}
+
+                         <!-- Categorie et souscategories metiers-->
+                         <div class="container containerMetier">
+                             <!-- Boutton + et - -->
+                            <div class="col-sm mb-3">
+                                <div class="input-group-append">
+                                  <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">Ajouter une catégorie</button>
+                                  <!-- <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2" type="button">Supprimer une catégorie</button> -->
+                                </div>
+                            </div>
+                         </div>
+
+
+                         {% else %}
+                          <div class="container containerMetier">
+                             <div class="form-row">
+
+                         {% for catSoucat in registreTemporaire["catSoucat"] %}
+                                 <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-3">
+                                     <!-- Categories-->
+                                        <div class="form-group col-md-6" id="catSousCat{{loop.index}}"> <!-- loop.index permet de retrouver le numéro d'index de la boucle -->
+                                          <label for="cat{{loop.index}}" class="font-weight-bold small">Selectionner une catégorie de métiers</label>
+                                          <select class="custom-select my-1 mr-sm-2" id="cat{{loop.index}}" name="cat" onChange="generateSubCategory(value, {{loop.index}})">
+                                                <option selected value="{{ catSoucat[0] }}">{{ catSoucat[0] }}</option> <!-- persister la catégorie saisie-->
+                                                 {% for objetCategorie in categories %} <!-- charge les autres objets catégories fournis aux html dans le return template-->
+                                                     {% if objetCategorie.labelCategorie != catSoucat[0]  %} <!-- condition pour ne pas doubler l'affichage de la catégorie d'origine-->
+                                                    <option value ="{{objetCategorie.labelCategorie}}">{{objetCategorie.labelCategorie}}</option> <!-- ajoute les catégories restantes-->
+                                                     {% endif %}
+                                                 {% endfor %}
+                                          </select>
+                                        </div>
+
+                                     <!-- Souscategories-->
+                                        <div class="form-group col-md-5" id="divSousCat{{loop.index}}" {% if catSoucat[1] == "aucune" %} style="visibility: hidden" {% endif %}> <!-- si la catégorie ne contient pas de sous-catégories, cacher la div des soucategories-->
+                                            <label for="sousCat{{loop.index}}" class="font-weight-bold small">Ajouter une sous-catégorie</label>
+                                            <select multiple class="form-control" id="sousCat{{loop.index}}" name="sousCat">
+                                                <option selected value="{{ catSoucat[1] }}">{{ catSoucat[1] }}</option> <!-- persiste la souscatégorie saisie-->
+                                            {% for objetCategorie in categories %}  <!-- charge les objets catégories fournis aux html dans le return template-->
+                                                {% if objetCategorie.labelCategorie == catSoucat[0]  %} <!-- Si le label de la catégorie chargé == le label de la catégorie affichée-->
+                                                    {% for sousCat in objetCategorie.souscategories %} <!-- pour chaque sous-catégorie de la catégorie séléctionnée-->
+                                                        {% if catSoucat[1] != sousCat.labelSouscategorie  %} <!-- condition pour ne pas doubler l'affichage de la souscatégories d'origine-->
+                                                     <option value="{{ sousCat.labelSouscategorie }}">{{ sousCat.labelSouscategorie }}</option> <!-- ajoute les souscatégories restantes-->
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            <option>aucune</option>
+                                            </select>
+                                        </div>
+
+                                      <!-- Bouttons-->
+                                      <div class="col-1">
+                                         <div class="input-group-append mt-4 pt-1">
+                                            <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-2" type="button">-</button>
+                                         </div>
+                                      </div>
+                                 </div>
+
+                         {% endfor %}
+
+                             </div>
+                           <!-- Boutton Ajouter une catégorie -->
+                          <div class="form-row">
+                                    <div class="col-sm">
+                                        <div class="input-group-append">
+                                          <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">Ajouter une catégorie</button>
+                                          <!-- <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2" type="button">Supprimer une catégorie</button> -->
+                                        </div>
+                                    </div>
+                          </div>
+                          </div>
+
+
+                     {% endif %}
+
+                     </div>
+                 </div>
+         </div>
+
+         <!-- Formulaire avec les caractéristiques physiques-->
+         <div class="card bg-light mb-3" style="max-width: 100rem;">
+              <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#caracterisquesPhysiques" aria-controls="caracterisquesPhysiques">Ajouter les caractéristiques physiques de la personne</div>
+             <div class="collapse" id="caracterisquesPhysiques">
+                  <div class="card card-body">
+
+                     <div class="form-group col-md-12">
+                        <label for="carrPhys">Description des caractéristiques physiques</label>
+                        <input type="text" class="form-control" id="carrPhys" name="carrPhys" placeholder="ex : une cicatrice à la joue gauche" value="{{ registreTemporaire["caracteristiquesPhysiques"] }}">
+                     </div>
+                    <div class="container">
+                        <div class="row pb-3">
+                             <div class="form-check-inline">
+                                <label class="form-check-label" for = "borgne">
+                                    {% if registreTemporaire["borgne"] %}
+                                <input class="form-check-input" type="checkbox" id="borgne" name="borgne" value="{{ registreTemporaire["borgne"] }}" checked> Borgne
+                                  {% else %}
+                                     <input class="form-check-input" type="checkbox" id="borgne" name="borgne"> Borgne
+                                     {% endif %}
+                                </label>
+                             </div>
+                              <div class=" form-check-inline">
+                                <label class="form-check-label" for="aveugle">
+                                     {%if registreTemporaire["aveugle"]  %}
+                                     <input class="form-check-input" type="checkbox" id="aveugle" name="aveugle" value="{{ registreTemporaire["aveugle"] }}" checked> Aveugle
+                                   {% else %}
+                                    <input class="form-check-input" type="checkbox" id="aveugle" name="aveugle"> Aveugle
+                                     {% endif %}
+                                </label>
+                             </div>
+                              <div class="form-check-inline">
+                                <label class="form-check-label" for="cul-de-jatte">
+                                      {%if registreTemporaire["culJatte"]  %}
+                                     <input class="form-check-input" type="checkbox" id="cul-de-jatte" name="cul-de-jatte" value="{{ registreTemporaire["culJatte"] }}" checked> Cul-de-jatte
+                                    {% else %}
+                                <input class="form-check-input" type="checkbox" id="cul-de-jatte" name="cul-de-jatte"> Cul-de-jatte
+                                     {% endif %}
+                                </label>
+                              </div>
+                        </div>
+                        <div class="row pb-3">
+                             <div class=" form-check-inline">
+                                <label class="form-check-label" for="unijambiste">
+                                    {%if registreTemporaire["unijambiste"]  %}
+                                    <input class="form-check-input" type="checkbox" id="unijambiste" name="unijambiste" value="{{ registreTemporaire["unijambiste"] }}" checked> Unijambiste
+                                    {% else %}
+                                  <input class="form-check-input" type="checkbox" id="unijambiste" name="unijambiste"> Unijambiste
+                                     {% endif %}
+                                </label>
+                             </div>
+                              <div class=" form-check-inline">
+                                <label class="form-check-label" for="manchot">
+                                    {%if registreTemporaire["manchot"]  %}
+                                    <input class="form-check-input" type="checkbox" id="manchot" name="manchot" value="{{ registreTemporaire["manchot"] }}" checked> Manchot
+                                    {% else %}
+                                  <input class="form-check-input" type="checkbox" id="manchot" name="manchot"> Manchot
+                                     {% endif %}
+                                </label>
+                             </div>
+                              <div class="form-check-inline">
+                                <label class="form-check-label" for="ampute">
+                                    {%if registreTemporaire["ampute"]  %}
+                                    <input class="form-check-input" type="checkbox" id="ampute" name="ampute" value="{{ registreTemporaire["ampute"] }}" checked> Amputé de la main du doigt ou du pied
+                                    {% else %}
+                                  <input class="form-check-input" type="checkbox" id="ampute" name="ampute"> Amputé de la main du doigt ou du pied
+                                     {% endif %}
+                                </label>
+                              </div>
+                        </div>
+                        <div class="row pb-3">
+                             <div class=" form-check-inline">
+                                <label class="form-check-label" for="cicatrice">
+                                     {%if registreTemporaire["cicatrice"]  %}
+                                    <input class="form-check-input" type="checkbox" id="cicatrice" name="cicatrice" value="{{ registreTemporaire["cicatrice"] }}" checked> Cicatrice
+                                    {% else %}
+                                  <input class="form-check-input" type="checkbox" id="cicatrice" name="cicatrice"> Cicatrice
+                                     {% endif %}
+                                </label>
+                             </div>
+                              <div class=" form-check-inline">
+                                <label class="form-check-label" for="verole">
+                                     {%if registreTemporaire["verole"]  %}
+                                    <input class="form-check-input" type="checkbox" id="verole" name="verole" value="{{ registreTemporaire["verole"] }}" checked> Vérole
+                                    {% else %}
+                                  <input class="form-check-input" type="checkbox" id="verole" name="verole"> Vérole
+                                     {% endif %}
+                                </label>
+                             </div>
+                              <div class="form-check-inline">
+                                <label class="form-check-label" for="autreCaracteristiques">
+                                    {%if registreTemporaire["autreCaracteristiques"]  %}
+                                     <input class="form-check-input" type="checkbox" id="autreCaracteristiques" name="autreCaracteristiques" value="{{ registreTemporaire["autreCaracteristiques"] }}" checked> Autres caractéristiques
+                                    {% else %}
+                                  <input class="form-check-input" type="checkbox" id="autreCaracteristiques" name="autreCaracteristiques"> Autres caractéristiques
+                                    {% endif %}
+                                </label>
+                              </div>
+                        </div>
+                    </div>
+
+                  </div>
+             </div>
+         </div>
+
+         <!-- Formulaire avec l'accompagné par-->
+         <div class="card bg-light mb-3" style="max-width: 100rem;">
+             <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#champsVoyageAvec" aria-controls="champsVoyageAvec">Ajouter des éléments sur les personnes d'accompagnement</div>
+             <div class="collapse" id="champsVoyageAvec">
+                  <div class="card card-body" id="containerVoyageAvec">
+                      <div class="container-fluid">
+                          <div class="form-group">
+                                <label for="accompagnePar">Accompagné par</label>
+                                <input type="text" class="form-control" id="accompagnePar" name="accompagnePar" placeholder="ex : sa femme et 3 enfants" value="{{ registreTemporaire["accompagnePar"] }}">
+                          </div>
+
+                          <div class="form-check mb-3">
+                                <label class="form-check-label">
+                                    {%if registreTemporaire["epoux"]  %}
+                                <input class="form-check-input" type="checkbox" name="epoux" value="{{ registreTemporaire["epoux"] }}" checked> Epoux/épouse
+                                    {% else  %}
+                                    <input class="form-check-input" type="checkbox" name="epoux"> Epoux/épouse
+                                    {% endif %}
+                                </label>
+                          </div>
+
+                           <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3">
+                              <div class="form-group col-4">
+                                    <label for="nbEnfants">Enfants (nombre)</label>
+                                    <input type="number" class="form-control" id="nbEnfants" name="nbEnfants" placeholder="ex : 2" value="{{ registreTemporaire["nbEnfants"] }}">
+                              </div>
+                              <div class="form-group col-4">
+                                    <label for="nbAutreMembre">Autres membre de la famille (nombre)</label>
+                                    <input type="number" class="form-control" id="nbAutreMembre" name="nbAutreMembre" placeholder="ex : 2" value="{{ registreTemporaire["nbAutreMembre"] }}">
+                              </div>
+                               <div class="form-group col-4">
+                                    <label for="nbAutrePers">Autres personnes (nombre)</label>
+                                    <input type="number" class="form-control" id="nbAutrePers" name="nbAutrePers" placeholder="ex : 2" value="{{ registreTemporaire["nbPersSupplement"] }}">
+                              </div>
+                           </div>
+                      </div>
+                  <!--Voyage Avec Identifiant personne-->
+                       <div class="container-fluid containerVoyage">
+                          <div class="form-group">
+                               <div class="row row-cols-2 mt-2">
+                                   {% if not registreTemporaire["voyageAvec"]%}
+                                   <div class="col-2"><label for="voyageAvecIdPers">Voyage avec ... </label></div>
+                                   <div class="col-10">
+                                       <div class="input-group-append">
+                                           <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm" type="button">Ajouter l'identifiant de la personne</button>
+                                       </div>
+                                      <!-- <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm" type="button">-</button> -->
+                                  </div>
+                                   {% else %}
+                                        <div class="container-fluid">
+                                {% for personne in registreTemporaire["voyageAvec"] %}
+                                      <div class="new-link-div row row-cols-2  mb-2">
+                                          <div class="col-4">
+                                              <input type="number" class="form-control" id="voyageAvecIdPers" name="voyageAvecIdPers" value="{{ personne }}">
+                                          </div>
+                                         <!-- Boutton + et - -->
+                                          <div class="col-1">
+                                              <div class="input-group-append">
+                                                  <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-1" type="button">-</button>
+                                              </div>
+                                          </div>
+                                      </div>
+                                {% endfor %}
+                                       </div>
+                                       <div class="col-10">
+                                       <div class="input-group-append">
+                                           <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm" type="button">Ajouter l'identifiant de la personne</button>
+                                       </div>
+                                      <!-- <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm" type="button">-</button> -->
+                                  </div>
+
+                                  {% endif %}
+                               </div>
+                          </div>
+                      </div>
+                  </div>
+             </div>
+         </div>
+
+         <!-- Formulaire avec les déplacements-->
+         <div class="card bg-light mb-3" style="max-width: 100rem;">
+              <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#DateAndMouvement" aria-controls="DateAndMouvement">Ajouter les lieux et les dates de passage de la personne</div>
+              <div class="collapse" id="DateAndMouvement">
+                <div class="card card-body containerLieuxDelares" id="containerLieuxDelares">
+
+                    {% if not registreTemporaire["lieuxDeclares"] %}
+                         <div class="input-group-append mb-3">
+                                  <div class="input-group-append">
+                                      <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm" type="button">Ajouter un lieu</button>
+                                  </div>
+                              </div>
+                         <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-4">
+                                <div class="col-3 required">
+                                    <label for="listeTypeLieu">Type de lieu</label>
+                                </div>
+                                <div class="col-3">
+                                    <label for="listeLieuDeclare">Lieu déclaré</label>
+                                </div>
+                                <div class="col-3">
+                                    <label for="listeLieuNormal">Lieu normalisé</label>
+                                </div>
+                                <div class="col-2">
+                                    <label for="listeDates">Date</label>
+                                </div>
+
+                         </div>
+                    {% else %}
+                        <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-4">
+                        <div class="col-3 required"><label for="listeTypeLieu">Type de lieu</label></div>
+                             <div class="col-3"><label for="listeLieuDeclare">Lieu déclaré</label></div>
+                             <div class="col-3"><label for="listeLieuNormal">Lieu normalisé</label></div>
+                             <div class="col-3"><label for="listeDates">Date</label></div>
+                        </div>
+
+                        {% for tupleLieuxTypeDate in registreTemporaire["lieuxDeclares"] %}
+                        <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-5">
+                            <div class="col-3">
+                                <select class="custom-select my-1 mr-sm-2" id="listeTypeLieu" name="listeTypeLieu" required>
+                                        <option value="{{ tupleLieuxTypeDate[3]}}">{{ tupleLieuxTypeDate[3]}}</option> <!-- ajoute le type de lieu saisis à l'origine-->
+                                        {% for lieuType in listeTypeLieux %} <!--listeTypeLieux passée au html depuis une liste en dur-->
+                                        {% if tupleLieuxTypeDate[3] != lieuType  %} <!-- condition pour ne pas doubler l'affichage les types de lieux d'origine-->
+                                        <option value = "{{ lieuType }}">{{lieuType}}</option> <!-- ajoute les types de lieux restants-->
+                                        {% endif %}
+                                        {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <input type="text" class="form-control" id="listeLieuDeclare" name="listeLieuDeclare" placeholder="ex : Duché de Parme" value="{{ tupleLieuxTypeDate[0]}}">
+                            </div>
+                            <div class="col-3 input-container-curiosity" id="idContainerLieuNormaliser{{loop.index}}">
+                                <input type="text" class="form-control" id="idLieuNormaliser{{loop.index}}" name="listeLieuNormal"  value="{{ tupleLieuxTypeDate[1]}}" onblur="myFunctionBlurFocus(value, id, {{loop.index}})">
+                            </div>
+                            <div class="col-2">
+                                <input type="date" class="form-control" id="listeDates" name="listeDates" value="{{ tupleLieuxTypeDate[2]}}">
+                            </div>
+                            <div class="col-1">
+                                 <div class="input-group-append">
+                                    <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-2" type="button">-</button>
+                                 </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                         <div class="col-10 mb-3">
+                             <div class="input-group-append">
+                                  <div class="input-group-append">
+                                      <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm" type="button">Ajouter un lieu</button>
+                                  </div>
+                             </div>
+                         </div>
+                    {% endif %}
+              </div>
+              </div>
+         </div>
+
+
+     {% block scripts %}
+
+           <script>
+                     var tagsLieux = {{ lieux|safe }}
+                     $("#idLieuNormaliser0").autocomplete({
+                      source: function( request, response ) {
+                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
+                              response( $.grep( tagsLieux, function( item ){
+                                  return matcher.test( item );
+                              }) );
+                          }
+                        });
+
+                     var tagsDoc = {{ typeDocument|safe}};
+                     $("#typeDoc").autocomplete({
+                      source: function( request, response ) {
+                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
+                              response( $.grep( tagsDoc, function( item ){
+                                  return matcher.test( item );
+                              }) );
+                          }
+                        });
+
+                     var tagsNomArchive = {{ listeNomsArchive|safe }};
+                     $("#archive").autocomplete({
+                      source: function( request, response ) {
+                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
+                              response( $.grep( tagsNomArchive, function( item ){
+                                  return matcher.test( item );
+                              }) );
+                          }
+                        });
+
+                     // FONCTION QUI PERMET DE GÉNÉRER LES SOUSCATEGORIES EN FCT DE LA CATÉGORIE CHOISIE
+
+                    // la fonction prend deux attributs: la valeur de <option> et un numero
+                    function generateSubCategory(value, nbClick) {
+                        //récupération de l'élement HTML <div> pour les soucategories (qui contient la balise label et la balise select)
+                        var divSousCat = document.getElementById("divSousCat"+nbClick);
+
+                        //récupération de l'élement HTML <Select> pour les soucategories
+                        var sousCat = document.getElementById("sousCat"+nbClick);
+
+                        // cacher la div qui contient les souscategories (la balise label et la balise select)
+                        divSousCat.style.visibility = "hidden";
+
+                        // supprimer le contenu du select dans souscategories (dans le cas où l'on change de catégorie au sein du même composant "catégorie")
+                        sousCat.options.length = 0;
+
+                        //Ajout de l'option Choisir dans les souscatégories systématiquement
+                        var option = document.createElement("option");
+                        option.text ='aucune'
+                        sousCat.add(option);
+
+                        {% for objetCategorie in categories %}
+                            if (value === "{{ objetCategorie.labelCategorie | safe }}") {
+                                {% for sousCat in objetCategorie.souscategories %}
+                                    // on rend visible la div des souscatégories
+                                    divSousCat.style.visibility = "visible";
+                                    // creation de la balise <option> pour les souscategories
+                                    option = document.createElement("option");
+                                    // on attribue à <option> le libellé de la souscategorie
+                                    option.text = "{{sousCat.labelSouscategorie | safe }}";
+                                    // on ajoute la balise option dans <select>
+                                    sousCat.add(option);
+                                {% endfor %}
+                            }
+                        {% endfor %}
+
+                    // sélectionne par défaut le premier élement de la liste de souscatégories (choisir...).
+                        sousCat.selectedIndex = "0";
+                    }
+
+                    <!-- AJOUT DU SCRIPT POUR MULTIPLIER LES LIGNES DES METIERS -->
+                    nbCategorie = parseInt({{ registreTemporaire["catSoucat"]|length }}); // recupère le nombre de catégories déja affichées
+                    nBclick = nbCategorie ;
+                    $(document).ready(function() {
+                     $("#containerCatSouscat").on("click", ".add-new-line", function (event) {
+                        event.preventDefault();
+                        nBclick =nBclick +1;
+                        var new_element = `<div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-3">
+                                        <div class="form-group col-md-6" id="catSousCat`+ nBclick+`">
+                                          <label class="font-weight-bold small" for="cat`+ nBclick+`">Selectionner une catégorie de métiers</label>
+                                          <select class="custom-select my-1 mr-sm-2" id="cat`+ nBclick+`" name="cat" onChange="generateSubCategory(value,`+ nBclick+`)">
+                                                <option selected>aucune</option>
+                                                {% for objetCategorie in categories %}
+                                                   <option value ="{{objetCategorie.labelCategorie}}">{{objetCategorie.labelCategorie}}</option>
+                                                {% endfor %}
+                                          </select>
+                                        </div>
+                                        <div class="form-group col-md-6" id="divSousCat`+ nBclick+`" style="visibility: hidden">
+                                            <label for="sousCat`+ nBclick+`" class="font-weight-bold small">Ajouter une sous-catégorie</label>
+                                            <select multiple class="form-control" id="sousCat`+ nBclick+`" name="sousCat">
+                                            </select>
+                                        </div>
+                                  <div class="col-sm">
+                                    <div class="input-group-append">
+                                      <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-3 " type="button">Ajouter une catégorie</button>
+                                      <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-3 ml-3" type="button">Renoncer à une catégorie</button>
+                                    </div>
+                                 </div>
+                               </div>`;
+
+                        $("#containerCatSouscat").append($(new_element));
+                     });
+                     $("#containerCatSouscat").on("click", ".delete-current-line", function (event) {
+                        event.preventDefault();
+                        var current = $(this),
+                            parent  = current.parents(".new-link-div");
+                            parent.remove();
+                     });
+                    });
+
+                    <!-- AJOUT DU SCRIPT POUR MULTIPLIER LES LIGNES POUR VOYAGE AVEC -->
+                    $(document).ready(function() {
+                     $("#containerVoyageAvec").on("click", ".add-new-line", function (event) {
+                        event.preventDefault();
+                        var new_element = `
+                        <div class="new-link-div row row-cols-1 mb-2">
+                                      <div class="col-4"><input type="number" class="form-control" name="voyageAvecIdPers" placeholder="ex : 875"></div>
+                                      <div class="col-2"><div class="input-group-append">
+                                      <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">+</button>
+                                      <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-2" type="button">-</button>
+                                      </div>
+                                      </div>
+                                  </div>   {{ typeDocument }}
+                        `;
+                        $("#containerVoyageAvec").append($(new_element));
+                        });
+
+                     $("#containerVoyageAvec").on("click", ".delete-current-line", function (event) {
+                        event.preventDefault();
+                        var current = $(this),
+                            parent  = current.parents(".new-link-div");
+                            parent.remove();
+                     });
+                    });
+
+                     <!-- AJOUT DU SCRIPT POUR MULTIPLIER LES LIGNES DES LIEUX DECLARES -->
+                     nBLieux = parseInt({{ registreTemporaire["lieuxDeclares"]|length }});
+                     nBNewLieu=nBLieux
+
+                     $(document).ready(function() {
+                     $("#containerLieuxDelares").on("click", ".add-new-line", function (event) {
+                        event.preventDefault();
+                        nBNewLieu=nBNewLieu+1;
+                        var new_element = `
+                              <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-5">
+                                              <div class="col-3"><select class="custom-select" name="listeTypeLieu" required>
+                                              <option selected></option>
+                                              {% for lieu in listeTypeLieux %}
+                                              <option value = "{{lieu}}">{{lieu}}</option>
+                                              {% endfor %}
+                                         </select></div>
+                                          <div class="col-3"><input type="text" class="form-control" name="listeLieuDeclare" placeholder="ex : Duché de Parme"></div>
+                                          <div class="col-3 input-container-curiosity" id ="idContainerLieuNormaliser`+nBNewLieu+`"><input type="text" class="form-control lieu-normalise-class" id="idLieuNormaliser`+nBNewLieu+`" name="listeLieuNormal" placeholder="ex : Parme" onblur="myFunctionBlurFocus(value,id, `+nBNewLieu+`,)"></div>
+                                          <div class="col-2"><input type="date" class="form-control" id="listeDates" name="listeDates"></div>
+
+                                         <div class="col-1">
+                                         <div class="input-group-append">
+                                             <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">+</button>
+                                             <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-1" type="button">-</button>
+                                             </div>
+                                         </div>
+                                      </div>
+                        `;
+                        $("#containerLieuxDelares").append($(new_element));
+
+                        $(".lieu-normalise-class").autocomplete({
+                              source: function( request, response ) {
+                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
+                              response( $.grep( tagsLieux, function( item ){
+                                  return matcher.test( item );
+                              }) );
+                          }
+                        });
+                     });
+
+                     $("#containerLieuxDelares").on("click", ".delete-current-line", function (event) {
+                        event.preventDefault();
+                        var current = $(this),
+                            parent  = current.parents(".new-link-div");
+                            parent.remove();
+                     });
+                    });
+
+                 function myFunctionBlurFocus(valeur, idHtml,numbreLoop) {
+                   removeValueWhenIncorrectPlace(tagsLieux, valeur, idHtml, "idContainerLieuNormaliser"+numbreLoop)
+               }
+
+                removeEnterSubmit ("creationFormId")
+
+                 //MODAL: FONCTIONS QUI PERMETENT DE CREER DES LIEUX DANS LA BASE DE DONNEES
+
+                 // ma fonction pour afficher la carte leaflet sans erreurs
+                  displayMapInModal("myModalPlace");
+
+                //generate map
+                var map = L.map('map', {center: [48.69096,  9.14062],zoom: 5});
+
+                var theMarker = {};
+                L.tileLayer( 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                    subdomains: ['a','b','c']
+                    }).addTo( map );
+
+                 // implement autocomplete avec les lieux de Geonames
+                $('#nomLieu').autocomplete({
+
+                // Appel http geonames avec la fonction ajax
+                source : function(requete, reponse){ // les deux arguments représentent les données nécessaires au plugin
+
+                  $.ajax({
+                        url : 'https://secure.geonames.org/searchJSON', // on appelle le script JSON
+                        dataType : 'json', // on spécifie bien que le type de données est en JSON
+                        data : {
+                            name_startsWith : requete.term, // on donne la chaîne de caractère tapée dans le champ de recherche Nom lieu
+                            {% if current_user.username_geoname != "" %}
+                            username : '{{ current_user.username_geoname|safe }}', // à remplacer par un username enregistré dans la base
+                            {% endif %}
+                            maxRows : 100, // nr d'éléments affichés
+                            lang : 'fr' // param lang pour avoir la version des noms en fr
+                        },
+
+                        success : function(donnee){
+                            reponse($.map(donnee.geonames, function(item){
+                                return {
+                                  label: item.name + (item.adminName1 ? ", " + item.adminName1 : "") + ", " + item.countryCode +", " + item.fclName, // affiche les 4 éléments: lieu, region, code pays et type lieu. Pour le département il y a une condition
+                                                // (item.adminName1 ? ", " + item.adminName1 : "") : si item.adminName1 (?) alors ","+ item.adminName1, sinon (:)  ""
+                                    value: item.name,
+                                    lat: item.lat,
+                                    lng: item.lng,
+                                    pays: item.countryName,
+                                    region: item.adminName1,
+                                  geonameId : item.geonameId
+                                }
+                            }));
+                        }
+                    });
+                },
+                    select : function(event, ui){ // lors de la sélection d'une proposition on rajoute dans les inputs automatiquement
+                    $( '#lat' ).val( ui.item.lat );
+                    $( '#lng' ).val( ui.item.lng);
+                    $( '#pays' ).val( ui.item.pays);
+                    $( '#region' ).val( ui.item.region);
+                    $( '#idGeonames' ).val( ui.item.geonameId);
+                    regenerateMap(ui.item.lat, ui.item.lng)
+                }
+                    });
+
+           function updateMap() { // appliqué à l'événement onchange sur latitude et longitude
+               var lat = document.getElementById("lat");
+               var lng = document.getElementById("lng");
+               regenerateMap(lat.value, lng.value) // les paramètres de la fonction représente la valeur de long et lat, pas les balises html long et lat
+           }
+
+           function regenerateMap (lat, long) {
+               map.setView([lat, long], 10); // setView: objet de Leaflet qui fixe la vue de la carte sur la lat et lonf
+               if (theMarker != undefined) { // si le marqueur est différent de null (car la première fois il n'existe pas)
+                   map.removeLayer(theMarker); //removeLayer:objet leaflet. supprime l'ancien marqueur de la carte
+               };
+               theMarker = L.marker([lat,long]).addTo(map); // L.marker: construot un nouveau marquer et l'ajoute à la carte
+           }
+
+           // vider le formulaire quand on ferme le modal
+           $("#closeModal").click(function () {
+               $("#creationPlaceFormId")[0].reset();
+               $("#successAlert").hide(); // cache le message de succes de la creation du lieu
+               $("#errorAlert").hide() // cache le message d'erreur de la creation du lieu
+           })
+
+           // send the form to the bdd. On click sur le boutton Sauvegarder
+           $("#idBtnSavePlace").click(function () {
+                        // récupère dans un objet de type dictionaire
+                       var body = { "nomLieu": $("#nomLieu").val(),
+                                   "pays": $("#pays").val(),
+                                   "region": $("#region").val(),
+                                   "depart": $("#depart").val(),
+                                   "lat": $("#lat").val(),
+                                   "lng": $("#lng").val(),
+                                   "codeINSEE": $("#codeINSEE").val(),
+                                   "idGeonames": $("#idGeonames").val()};
+                       //initialise un appel HTTP avec la methode post
+                       $.ajax(
+                           {
+                               url: "{{url_for("savePlace")}}", //l'url de la route défini dans flask
+                               type:"POST",
+                               dataType: 'json', // format des données envoyées
+                               contentType: "application/json", // format des données envoyées
+                               data: JSON.stringify(body), //transorme l'objet body dans un objet json
+                              //si le retour est "success"
+                               success: function (retourHttp) { //le retour serveur (avec 4 parametres) est utilisé dans la variable retourHttp
+                                   if (retourHttp.codeRetour==="OK"){ // codeRetour est la deuxième variable de la methode json_response déclaré coté serveur.
+                                        //mettre à jour la liste des lieux coté client pour l'autocomplete
+                                       tagsLieux.push(retourHttp.nouveauLieuComplet); // nouveauLieuComplet: la quatrieme variable de la methode json_response
+                                        $("#successAlert").text(retourHttp.message).show(); // affiche à l'ecran le message de succes de la creation du lieu
+                                        $("#errorAlert").hide() // cahche la div qui affiche l'erreur
+                                   }
+                                   else { // Si le code n'est pas "OK"
+                                        $("#errorAlert").text(retourHttp.message).show(); // affiche le message d'erreur dans la balise div associée avec l'erreur
+                                        $("#successAlert").hide();
+                                   }
+                                   },
+                               // si le retour est error ou echec, affiche un message 404
+                                error : function (retourHttp) {
+                                        $("#errorAlert").text(retourHttp.message).show();
+                                        $("#successAlert").hide();
+                                   }
+                           });
+                   })
+
+           </script>
+
+     {% endblock %}
+
+             <button type="submit" class="btn btn-primary">Créer régistre</button>
+        </form>
+
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+     <!-- The Modal -->
+     <div class="container">
+
+        <div class="modal fade" aria-labelledby="myLargeModalLabel" id="myModalPlace" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+              <h4 class="modal-title">Création d'un nouveau lieu</h4>
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body ui-front">
+
+                <form class="container" method="POST" id="creationPlaceFormId">
+                     <div class="form-group">
+                          <label for="nomLieu">Nom du lieu <small style="color: #bd2130">(choisir l'option "city, village...")</small></label>
+                        <input type="text" class="form-control" id="nomLieu" name="nomLieu" maxlength="64" placeholder="ex : Villers-Cotterêts">
+                      </div>
+                     <div class="form-group">
+                        <label for="pays">Pays</label>
+                        <input type="text" class="form-control" id="pays" name="pays" maxlength="20" placeholder="ex : France">
+                      </div>
+                     <div class="form-group">
+                            <label for="region">Région</label>
+                            <input type="text" class="form-control" id="region" name="region" maxlength="20" placeholder="ex : France">
+                          </div>
+                     <div class="form-group">
+                            <label for="depart">Département</label>
+                            <input type="text" class="form-control" id="depart" name="depart" maxlength="20" placeholder="ex : France">
+                          </div>
+                     <div class="form-group">
+                        <label for="lat">Latitude</label>
+                        <input type="text" class="form-control" id="lat" name="latitude" maxlength="64" placeholder="ex : 49.25311" onchange="updateMap()">
+                      </div>
+                     <div class="form-group">
+                        <label for="lng">Longitude</label>
+                        <input type="text" class="form-control" id="lng" name="longitude" maxlength="64" placeholder="ex : 3.09003" onchange="updateMap()">
+                      </div>
+                     <div class="form-group">
+                          <label for="codeINSEE">Code INSEE (pour les localités françaises)</label>
+                          <p><small class="text-muted">(connectez-vous au <a href="https://public.opendatasoft.com/explore/dataset/correspondance-code-insee-code-postal/information/" target="_blank">site de l'INSEE)</a></small></p>
+                        <input type="text" class="form-control" id="codeINSEE" name="codeINSEE" maxlength="64" placeholder="ex : 02810">
+                      </div>
+                     <div class="form-group">
+                        <label for="idGeonames">Identifiant Geonames</label>
+                        <input type="text" class="form-control" id="idGeonames" name="idGeonames" maxlength="64" placeholder="ex : 2968405">
+                      </div>
+
+                     <div id="map" style="height: 400px; width: 700px;"></div>
+
+                             <!-- Modal footer -->
+                     <div class="modal-footer">
+                           <button type="button" id ="closeModal" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                           <button type="button" id="idBtnSavePlace" class="btn btn-primary">Sauvegarder</button>
+                     </div>
+                </form>
+
+                <div id="successAlert" class="alert alert-success" role="alert" style="display:none;"></div>
+                <div id="errorAlert" class="alert alert-danger" role="alert" style="display:none;"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+<form class="container" method="POST" id="creationPersFormId" action="{{url_for("creer_personne")}}">
+          <div class="row">
+            <div class="col-8"> <header class="page-header"><h2>Page de création d'une nouvelle personne</h2></header></div>
+          </div>
+   <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="nom">Nom</label>
+        <input type="text" class="form-control" id="nom" name="nom" maxlength="64" placeholder="ex : Dumas" value="{{ personneTemporaire["nom"] }}" required>
+      </div>
+      <div class="form-group col-md-6">
+        <label for="prenom">Prénom</label>
+        <input type="text" class="form-control" id="prenom" name="prenom" maxlength="64" placeholder="ex : Alexandre" value="{{ personneTemporaire["prenom"] }}">
+      </div>
+   </div>
+    <div class="form-row">
+        <div class="form-group col-md-6" id="idDivNaissance">
+        <label for="lieuNaissance">Lieu de naissance</label>
+        <input type="text" class="form-control" id="lieuNaissance" name="lieuNaissance" placeholder="ex : Villers-Cotterêts" value="{{ personneTemporaire["lieuNaissance"] }}" onblur="myFunctionBlurFocusNaissance(value,id)">
+      </div>
+      <div class="form-group col-md-6">
+        <label for="anneeNaissance">Année de naissance</label>
+        <input type="number" class="form-control" id="anneeNaissance" name="anneeNaissance" placeholder="ex : 1789" value="{{ personneTemporaire["anneeNaissance"] }}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-6" id="idDivDeces">
+        <label for="lieuDeces">Lieu de décès</label>
+        <input type="text" class="form-control" id="lieuDeces" name="lieuDeces" placeholder="ex : Villers-Cotterêts" value="{{ personneTemporaire["lieuDeces"] }}" onblur="myFunctionBlurFocusDeces(value,id)">
+      </div>
+      <div class="form-group col-md-6">
+        <label for="dateDeces">Date du décès</label>
+        <input type="date" class="form-control" id="dateDeces" name="dateDeces" value="{{ personneTemporaire["dateDeces"] }}" >
+      </div>
+    </div>
+
+  <div class="form-group">
+    <label for="sexe">Sexe (Choisir dans la liste ci-dessous)</label>
+    <select class="form-control" name ="sexe" id="sexe" required>
+      <option selected value="{{ personneTemporaire["sexe"] }}">{{ personneTemporaire["sexe"] }}</option>
+      {% if "Inconnu" == personneTemporaire["sexe"] %}
+      <option>Femme</option>
+      <option>Homme</option>
+      {% elif "Femme"==personneTemporaire["sexe"] %}
+      <option>Inconnu</option>
+      <option>Homme</option>
+       {% elif "Homme"==personneTemporaire["sexe"] %}
+      <option>Inconnu</option>
+      <option>Femme</option>
+          {% else  %}
+      <option>Inconnu</option>
+      <option>Homme</option>
+      <option>Femme</option>
+       {% endif %}
+    </select>
+  </div>
+    <div class="form-group">
+    <label for="certitude">Certitude des informations</label>
+     <input type="text" class="form-control" id="certitude" name="certitude" maxlength="100" placeholder="ex : nom incertain" value="{{ personneTemporaire["certitudeNP"] }}">
+  </div>
+  <div class="form-group">
+    <label for="description">Observation du chercheur</label>
+    <textarea class="form-control" id="description" name="description" rows="3">{{ personneTemporaire["observations"] }}</textarea>
+  </div>
+    <button type="submit" class="btn btn-primary">Créer</button>
+
+</form>
+  {% block scripts %}
+
+  <script>
+    var tagsLieux = {{ lieux | safe }};
+      $( "#lieuNaissance, #lieuDeces" ).autocomplete({
+        source: function( request, response ) {
+              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
+              response( $.grep( tagsLieux, function( item ){
+                  return matcher.test( item );
+              }) );
+          }
+        });
+
+      function myFunctionBlurFocusNaissance(valeur, idHtml) {
+                   removeValueWhenIncorrectPlace(tagsLieux, valeur, idHtml,"idDivNaissance" )
+               }
+      function myFunctionBlurFocusDeces(valeur, idHtml) {
+                   removeValueWhenIncorrectPlace(tagsLieux, valeur, idHtml,"idDivDeces" )
+               }
+
+      removeEnterSubmit ("creationPersFormId")
+
+  //MODAL: FONCTIONS QUI PERMETENT DE CREER DES LIEUX DANS LA BASE DE DONNEES
+
+     // ma fonction pour afficher la carte leaflet sans erreurs
+      displayMapInModal("myModalPlace");
+
+    //generate map
+    var map = L.map('map', {center: [48.69096,  9.14062],zoom: 5});
+
+    var theMarker = {};
+    L.tileLayer( 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        subdomains: ['a','b','c']
+        }).addTo( map );
+
+     // implement autocomplete avec les lieux de Geonames
+    $('#nomLieu').autocomplete({
+
+        // Appel http geonames avec la fonction ajax
+        source : function(requete, reponse){ // les deux arguments représentent les données nécessaires au plugin
+
+          $.ajax({
+                url : 'https://secure.geonames.org/searchJSON', // on appelle le script JSON
+                dataType : 'json', // on spécifie bien que le type de données est en JSON
+                data : {
+                    name_startsWith : requete.term, // on donne la chaîne de caractère tapée dans le champ de recherche Nom lieu
+                    {% if current_user.username_geoname != "" %}
+                    username : '{{ current_user.username_geoname|safe }}',
+                    {% endif %}
+                    maxRows : 100, // nr d'éléments affichés
+                    lang : 'fr' // param lang pour avoir la version des noms en fr
+                },
+
+                success : function(donnee){
+                    reponse($.map(donnee.geonames, function(item){
+                        return {
+                          label: item.name + (item.adminName1 ? ", " + item.adminName1 : "") + ", " + item.countryCode +", " + item.fclName, // affiche les 4 éléments: lieu, region, code pays et type lieu. Pour le département il y a une condition
+                                        // (item.adminName1 ? ", " + item.adminName1 : "") : si item.adminName1 (?) alors ","+ item.adminName1, sinon (:)  ""
+                            value: item.name,
+                            lat: item.lat,
+                            lng: item.lng,
+                            pays: item.countryName,
+                            region: item.adminName1,
+                          geonameId : item.geonameId
+                        }
+                    }));
+                }
+            });
+        },
+            select : function(event, ui){ // lors de la sélection d'une proposition on rajoute dans les inputs automatiquement
+            $( '#lat' ).val( ui.item.lat );
+            $( '#lng' ).val( ui.item.lng);
+            $( '#pays' ).val( ui.item.pays);
+            $( '#region' ).val( ui.item.region);
+            $( '#idGeonames' ).val( ui.item.geonameId);
+            regenerateMap(ui.item.lat, ui.item.lng)
+        }
+        });
+
+   function updateMap() { // appliqué à l'événement onchange sur latitude et longitude
+       var lat = document.getElementById("lat");
+       var lng = document.getElementById("lng");
+       regenerateMap(lat.value, lng.value) // les paramètres de la fonction représente la valeur de long et lat, pas les balises html long et lat
+    }
+
+   function regenerateMap (lat, long) {
+       map.setView([lat, long], 10); // setView: objet de Leaflet qui fixe la vue de la carte sur la lat et lonf
+       if (theMarker != undefined) { // si le marqueur est différent de null (car la première fois il n'existe pas)
+           map.removeLayer(theMarker); //removeLayer:objet leaflet. supprime l'ancien marqueur de la carte
+       };
+       theMarker = L.marker([lat,long]).addTo(map); // L.marker: construot un nouveau marquer et l'ajoute à la carte
+   }
+
+
+           // vider le formulaire quand on ferme le modal
+           $("#closeModal").click(function () {
+               $("#creationPlaceFormId")[0].reset();
+                $("#successAlert").hide(); // cache le message de succes de la creation du lieu
+                $("#errorAlert").hide() // cache le message d'erreur de la creation du lieu
+           })
+
+           // send the form to the bdd. On click sur le boutton Sauvegarder
+           $("#idBtnSavePlace").click(function () {
+                        // récupère dans un objet de type dictionaire
+                       var body = { "nomLieu": $("#nomLieu").val(),
+                                   "pays": $("#pays").val(),
+                                   "region": $("#region").val(),
+                                   "depart": $("#depart").val(),
+                                   "lat": $("#lat").val(),
+                                   "lng": $("#lng").val(),
+                                   "codeINSEE": $("#codeINSEE").val(),
+                                   "idGeonames": $("#idGeonames").val()};
+                       //initialise un appel HTTP avec la methode post
+                       $.ajax(
+                           {
+                               url: "{{url_for("savePlace")}}", //l'url de la route défini dans flask
+                               type:"POST",
+                               dataType: 'json', // format des données envoyées
+                               contentType: "application/json", // format des données envoyées
+                               data: JSON.stringify(body), //transorme l'objet body dans un objet json
+                              //si le retour est "success"
+                               success: function (retourHttp) { //le retour serveur (avec 4 parametres) est utilisé dans la variable retourHttp
+                                   if (retourHttp.codeRetour==="OK"){ // codeRetour est la deuxième variable de la methode json_response déclaré coté serveur.
+                                        //mettre à jour la liste des lieux coté client pour l'autocomplete
+                                       tagsLieux.push(retourHttp.nouveauLieuComplet); // nouveauLieuComplet: la quatrieme variable de la methode json_response
+                                        $("#successAlert").text(retourHttp.message).show(); // affiche à l'ecran le message de succes de la creation du lieu
+                                        $("#errorAlert").hide() // cahche la div qui affiche l'erreur
+                                   }
+                                   else { // Si le code n'est pas "OK"
+                                        $("#errorAlert").text(retourHttp.message).show(); // affiche le message d'erreur dans la balise div associée avec l'erreur
+                                        $("#successAlert").hide();
+                                   }
+                                   },
+                               // si le retour est error ou echec, affiche un message 404
+                                error : function (retourHttp) {
+                                        $("#errorAlert").text(retourHttp.message).show();
+                                        $("#successAlert").hide();
+                                   }
+                           });
+                   })
+
+  </script>
+
+  {% endblock %}
+
+{% endblock %}

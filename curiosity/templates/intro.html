@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+
+ <div class="container">
+	 <header class="page-header">
+		<h1 style="color: #a5a5a5">Bienvenue sur le site du projet Spectacle de curiosités</h1>
+     </header>
+    <div class="row mt-3 mb-5">
+		<div class="col-6">
+			<p><img src="../static/images/Lanterne.jpg" class=img-responsive alt="image Lanterne" width="500" height="500" align="center"></p>
+		</div>
+		<div class="col-6 mt-5">
+			<p>Les spectacles de curiosités ont longtemps fait partie du quotidien de nos ancêtres. Montreurs d’animaux, tours de physique et de mécanique, lanternes magiques, ventriloques, jongleurs et équilibristes sur pied ou à cheval, aérostats, marionnettes et cires sont, aux XVIIIe et XIXe siècles, l’âme de petits métiers ambulants qui animent les places publiques, les rues, les auberges, les cabarets, les loges des foires, les cirques naissants, voire les maisons particulières.</p>
+            <p>Ce projet a pour ambition de proposer aux chercheurs mais aussi au public large une approche prosopographique des montreurs de curiosités à travers les sources de police, les passeports, les registres de visa, les annonces et les affiches de plusieurs villes françaises. </p>
+            <p>Vous pouvez consulter sur ce site les notices des personnes, les lieux de passage de chacune d’entre elles et la liste des catégories professionnelles qui relèvent des « curiosités ». La base contient plus de 4500 notices de personnes et elle sera enrichie régulièrement par de nouvelles données.</p>
+            <p>Bonne découverte ! </p>
+		</div>
+
+        <!--<div class="col-6"><div style="text-align:center;">
+            <div>
+                <a href="https://www.calameo.com/books/0051680671d9cd4d7fc00" target="_blank">Ces Savoyards Montreurs De Lanterne Magique</a>
+            </div>
+            <iframe src="//v.calameo.com/?bkcode=0051680671d9cd4d7fc00" width="600" height="200" frameborder="0" scrolling="no" allowtransparency allowfullscreen></iframe>
+            </div>
+        </div>-->
+    </div>
+
+</div>
+
+    {% if personnes %}
+        <p><strong>Les {{personnes|length}} dernières notices enregistrées :</strong></p>
+
+  <div class="row">
+       {% for personne in personnes %}
+
+    <div class="col">
+        <h5 class="card-title font-weight-bold">
+            {% if not personne.nom %}
+                Nom non identifié,
+            {% else %}
+                {{personne.nom}},
+            {% endif %}
+           {% if not personne.prenom %}
+               prénom non identifié
+           {% else %}
+                {{personne.prenom}}
+           {% endif %}
+        </h5>
+            {% if personne.anneeNaissance %}
+		    <p>année de naissance : {{personne.anneeNaissance}} </p>
+		    {% else %}
+		    <p>année de naissance : non identifiée</p>
+		    {% endif %}
+		    {% if personne.lieux_naissance %}
+		    <p>lieu de naissance : {{personne.lieux_naissance.nomLieuFr}}</p>
+		    {% else %}
+		    <p>lieu de naissance : non identifé </p>
+		    {% endif %}
+		    <a href="{{url_for('notice', identifier=personne.id)}}" class="btn btn-secondary">voir notice</a>
+		  </div>
+    {% endfor %}
+  </div>
+    {% endif %}
+
+</div>
+{% endblock %}

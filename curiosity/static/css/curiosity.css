@@ -1,0 +1,332 @@
+.btn-curiosity {
+  color: #343a40;
+  background-color: #a1b7ce;
+  border-color: #a1b7ce;
+}
+.btn-curiosity:hover {
+  color: #343a40;
+  background-color: #0069d9;
+  border-color: #0062cc;
+}
+.btn-curiosity:focus, .btn-curiosity.focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+}
+.btn-curiosity.disabled, .btn-curiosity:disabled {
+  background-color: #a1b7ce;
+  border-color: #a1b7ce;
+}
+.btn-curiosity:not([disabled]):not(.disabled):active, .btn-curiosity:not([disabled]):not(.disabled).active,
+.show > .btn-curiosity.dropdown-toggle {
+  color: #fff;
+  background-color: #0062cc;
+  border-color: #005cbf;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+}
+.curiosity-cat-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 1.5rem;
+  clear: both;
+  font-weight: 400;
+  color: #212529;
+  text-align: inherit;
+  white-space: nowrap;
+  background-color: #cddcea;
+  border: 0;
+}
+.curiosity-met-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 1.5rem;
+  clear: both;
+  font-weight: 400;
+  color: #212529;
+  text-align: inherit;
+  white-space: nowrap;
+  background-color: #c2bb4c;
+  border: 0;
+}
+.curiosity-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.25rem 1.5rem;
+  clear: both;
+  font-weight: 400;
+  color: #212529;
+  text-align: inherit;
+  white-space: nowrap;
+  background-color: transparent;
+  border: 0;
+}
+.curiosity-dropdown-item:hover, .curiosity-item:focus {
+  color: #4a7092;
+  text-decoration: none;
+  background-color: #e6e8ea;
+}
+ul, #myUL {
+  list-style-type: none;
+}
+#myUL {
+  margin: 0;
+  padding: 0;
+}
+.caret {
+  cursor: pointer;
+  -webkit-user-select: none; /* Safari 3.1+ */
+  -moz-user-select: none; /* Firefox 2+ */
+  -ms-user-select: none; /* IE 10+ */
+  user-select: none;
+  color: #4a7092;
+}
+.caret::before {
+  content: "\25B6";
+  color: #043d7a;
+  display: inline-block;
+  margin-right: 6px;
+}
+.caret-down::before {
+  -ms-transform: rotate(90deg); /* IE 9 */
+  -webkit-transform: rotate(90deg); /* Safari */'
+  transform: rotate(90deg);
+}
+.nested {
+  display: none;
+}
+.active {
+  display: block;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  border: 1px solid #ddd;
+}
+th, td {
+  text-align: left;
+  padding: 16px;
+}
+tr:nth-child(even) {
+  background-color: #f2f2f2
+}
+.just-padding {
+  padding: 15px;
+}
+
+.list-group.list-group-root {
+  padding: 0;
+  overflow: hidden;
+}
+.list-group.list-group-root .list-group {
+  margin-bottom: 0;
+}
+.list-group.list-group-root .list-group-item {
+  border-radius: 0;
+  border-width: 1px 0 0 0;
+}
+.list-group.list-group-root > .list-group-item:first-child {
+  border-top-width: 0;
+}
+.list-group.list-group-root > .list-group > .list-group-item {
+  padding-left: 30px;
+}
+.list-group.list-group-root > .list-group > .list-group > .list-group-item {
+  padding-left: 45px;
+}
+.list-group-item .glyphicon {
+  margin-right: 5px;
+}
+.curiosity-labelMetier {
+  margin-left: 20px;
+  color: #043d7a;
+}
+.badge-curiosity-info {
+  color: #fff;
+  background-color: #043d7a;
+}
+
+.fa-drum{
+  color: #043d7a;
+  margin-right: 6px;
+}
+
+.far fa-minus-square{
+  color: #043d7a;
+}
+
+#mapid {
+  height: 280px;
+  width: 500px;
+}
+.card-header_curiosity {
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 0;
+  background-color: #e6e6e6;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+.card-body-curiosity{
+  -ms-flex: 1 1 auto;
+  flex: 1 1 auto;
+  padding: 1.25rem;
+}
+.card-header_curiosity:after {
+    font-family: 'FontAwesome';
+    content: "\f068";
+    float: right;
+}
+
+.card-header_curiosity.collapsed:after {
+    /* symbol for "collapsed" panels */
+    content: "\f067";
+}
+
+.accordion .card-header_curiosity:after {
+    font-family: FontAwesome;
+    content: "\f068";
+    float: right;
+    color:#043d7a;
+}
+.accordion .card-header_curiosity.collapsed:after {
+    /* symbol for "collapsed" panels */
+    content: "\f067";
+    color: #043d7a;
+}
+/*
+    DEMO STYLE
+*/
+@import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
+
+
+.navbar {
+    padding: 15px 10px;
+    background: #fff;
+    border: none;
+    border-radius: 0;
+    margin-bottom: 40px;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+.navbar-btn {
+    box-shadow: none;
+    outline: none !important;
+    border: none;
+}
+.line {
+    width: 100%;
+    height: 1px;
+    border-bottom: 1px dashed #ddd;
+    margin: 40px 0;
+}
+/* ---------------------------------------------------
+    SIDEBAR STYLE
+----------------------------------------------------- */
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+#sidebar {
+
+    min-width: 250px;
+    max-width: 250px;
+    transition: all 0.3s;
+}
+#sidebar.active {
+    margin-left: -250px;
+}
+
+#sidebar .sidebar-header {
+    padding: 15px;
+    color: #5bc0de ;
+}
+
+#sidebar .card {
+    margin-left: 10px;
+}
+
+#sidebar article.components {
+    padding: 20px 0;
+    border-bottom: 1px solid #47748b;
+}
+
+a[data-toggle="collapse"] {
+    position: relative;
+}
+
+a.download {
+    background: #fff;
+    color: #7386D5;
+}
+a.article,
+a.article:hover {
+    background: #6d7fcc !important;
+    color: #fff !important;
+}
+/* ---------------------------------------------------
+    CONTENT STYLE
+----------------------------------------------------- */
+#content {
+    width: 100%;
+    padding: 20px;
+    min-height: 100vh;
+    transition: all 0.3s;
+}
+/* ---------------------------------------------------
+    MEDIAQUERIES
+----------------------------------------------------- */
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: -250px;
+    }
+    #sidebar.active {
+        margin-left: 0;
+    }
+    #sidebarCollapse span {
+        display: none;
+    }
+}
+
+ul {
+    padding: 0;
+  margin: 20px;
+
+}
+.input-container-curiosity {
+    display: -ms-flexbox; /* IE10 */
+  display: flex;
+  width: 100%;
+  margin-bottom: 15px;
+}
+.icon-curiosity{
+    padding: 10px;
+  background: red;
+  color: white;
+  min-width: 50px;
+  text-align: center;
+
+}
+.input-field-curiosity {
+  width: 100%;
+  padding: 10px;
+  outline: none;
+}
+.input-field-curiosity:focus {
+  border: 2px solid dodgerblue;
+}
+.pac-container {
+    z-index: 9999;
+}
+
+
+.required label {
+    font-weight: bold;
+}
+
+.required label:after {
+    color: #e32;
+    content: ' *';
+    display:inline;
+}
+
+.scrollable{
+    overflow-y: auto;
+    max-height: 300px;
+}

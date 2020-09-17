@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+ <div class="container-fluid">
+   <!-- En-tête: Nom, Prénom et boutton de suppression de la personne (class Personne) -->
+     <div class="container">
+            {%if unique %}
+            <div class="row">
+                <div class="col">
+                  <header class="page-header">
+                    <h2>
+                        {% if not unique.nom %}
+                            Nom non identifié,
+                        {% else %}
+                            {{unique.nom}},
+                        {% endif %}
+                       {% if not unique.prenom %}
+                           prénom non identifié
+                       {% else %}
+                            {{unique.prenom}}
+                       {% endif %}
+                    </h2>
+                  </header>
+                </div>
+            </div>
+            {% endif %}
+       </div>
+        <!-- Affichage des données uniques de la personne (class Personne) -->
+     <div class="container">
+            <div class="row">
+              <!-- Affichage du code unique -->
+              <div class="col-4"> <p class="font-weight-bold">Code unique</div>
+              <div class="col-8">{{unique.id}}</div>
+               <!-- Affichage du code unique -->
+                <div class="col-4"><button class="btn btn-outline-success add-new-line font-weight-bold btn-sm" type="button"><a href="{{url_for('notice', identifier=unique.id)}}">Voir la notice détaillée</a></button></div>
+
+            </div>
+        </div>
+        <!-- Affichage des détails des registres (class Details Registre) -->
+     <div class="container small">
+             <!--Titres  -->
+             <header class="page-header">
+                  <h3 class="pb-2 mt-3"><small class="text-muted">Tous les lieux de passage de la personne</small></h3>
+             </header>
+
+     <div id="mapid" class="mb-3" style="height: 410px; width:60%"></div>
+
+        <table id="curiosity" class="table" style="width:100%">
+          <thead>
+              <tr>
+                <th>Nom du lieux</th>
+                <th>Date</th>
+                <th>Type de lieu</th>
+              </tr>
+          </thead>
+          <tbody>
+                  {% for lieuDeclare in listeLieu %}
+                        <tr>
+                            {% if lieuDeclare.lieux.nomLieuFr %}
+                              <td>
+                              {{ lieuDeclare.lieux.nomLieuFr }}
+                              </td>
+                            {% else %}
+                            <td>
+                               - illisibile -
+                            </td>
+                            {% endif %}
+                            {% if lieuDeclare.date %}
+                            <td>
+                                {{lieuDeclare.date}}
+                            </td>
+                            {% else %}
+                            <td> non renseignée</td>
+                            {% endif %}
+                            {% if lieuDeclare.typeLieu %}
+                            <td>
+                                {{lieuDeclare.typeLieu}}
+                            </td>
+                            {% else %}
+                            <td> non renseignée</td>
+                            {% endif %}
+                        </tr>
+                  {% endfor %}
+          </tbody>
+        </table>
+     </div>
+
+
+
+ {% block scripts %}
+
+
+            <script>
+
+             $(document).ready(function() {
+                $('#curiosity').DataTable( {
+                    "language": {
+                        "url": "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
+                    }
+                } );
+            } );
+
+                var mymap = L.map('mapid').setView([46.00, 2.00], 5);
+                L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+                   {attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                    maxZoom: 20,
+                    id: 'mapbox/streets-v11',
+                    accessToken: 'pk.eyJ1IjoidmFzYXVyYSIsImEiOiJjazVod3drNTUwN3ZqM3BvNzcyNXQxNjg3In0.l_LUXbWkAMvNb3lttxpuEQ'
+                }).addTo(mymap);
+
+                const myCustomColour = '#981326';
+
+            const markerHtmlStyles = `
+              background-color: ${myCustomColour};
+              width: 1.8rem;
+              height: 1.8rem;
+              display: block;
+              left: -1.5rem;
+              top: -1.5rem;
+              position: relative;
+              border-radius: 3rem 3rem 0;
+              transform: rotate(45deg);
+              border: 1px solid #FFFFFF`;
+
+            const myIconBirth = L.divIcon({
+              className: "my-custom-pin",
+              iconAnchor: [0, 24],
+              labelAnchor: [-6, 0],
+              popupAnchor: [0, -36],
+              html: `<span style="${markerHtmlStyles}" />`
+            });
+
+                //boucle sur les toutes les villes de passage et ajouter un marqueur sur la carte
+                {% for registre in unique.registresPers %}
+                    {% for lieuDeclare in registre.lieuxDeclares %}
+                        {% if lieuDeclare.typeLieu == "Naissance" %}
+                        L.marker([{{lieuDeclare.lieux.lat}},{{lieuDeclare.lieux.lng}}], {icon: myIconBirth}).bindPopup("Lieu de naissance: {{ lieuDeclare.lieux.nomLieuFr}}").addTo(mymap);
+                        {%  elif lieuDeclare.lieux.lat and lieuDeclare.lieux.lng %}
+                            L.marker([{{lieuDeclare.lieux.lat}},{{lieuDeclare.lieux.lng}}]).bindPopup("{{ lieuDeclare.lieux.nomLieuFr}}").addTo(mymap);
+                       {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </script>
+
+        {% endblock %}
+ </div>
+
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container">
+
+    <h1 class="mb-2">{{titre}}</h1>
+    {% if resultats.total > 0 %}
+        <p>Il y a {{resultats.total}} notice(s) qui répond(ent) à votre requête :</p>
+        <ul>
+            {% for resultat in resultats.items %}
+                <li><a href="{{url_for("notice", identifier=resultat.id)}}">{{resultat.nom}} {{resultat.prenom}}. Id: {{resultat.id}}</a></li>
+            {% endfor %}
+        </ul>
+    <nav aria-label="research-pagination">
+      <ul class="pagination">
+      {% if resultats.has_prev %}
+         <li class="page-item">
+             <a class="page-link" href="{{ url_for('recherche', keyword=keyword, page=resultats.prev_num) }}">Précédent</a> <!-- Le lien URL est du type http:...../index?page=2-->
+         </li>
+      {% endif %}
+        {%- for page in resultats.iter_pages() %}
+            {% if page %}
+
+              {% if page != resultats.page %}
+                <li class="page-item">
+                    <a class="page-link" href="{{url_for("recherche", keyword=keyword, page=page) }}">{{page}}</a>
+                </li>
+              {% else %}
+                <li class="page-item active disabled">
+                  <a class="page-link">{{page}} <span class="sr-only">(actuelle)</span></a>
+                </li>
+              {% endif %}
+
+            {% else %}
+                <li class="page-item disabled">
+                  <a class="page-link">...</a>
+                </li>
+            {% endif %}
+
+        {%- endfor %}
+        {% if resultats.has_next %}
+         <li class="page-item">
+             <a class="page-link" href="{{ url_for('recherche', keyword=keyword, page=resultats.next_num) }}">Suivant</a> <!-- Le lien URL est du type http:...../index?page=2-->
+         </li>
+      {% endif %}
+
+      </ul>
+    {% else %}
+      <p class="mt-5 mb-2" style="font-size : 20px">Aucun résultat</p>
+    </nav>
+    {% endif %}
+    </div>
+{% endblock %}

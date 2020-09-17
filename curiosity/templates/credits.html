@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container">
+
+         <header class="page-header">
+		    <h1>Crédits</h1>
+         </header>
+
+         <div>
+            <p>
+                Maison des Sciences de l'Homme <br>
+                4, Rue Ledru, <br>
+                63001 Clermont-Ferrand
+            </p>
+         </div>
+
+         <div>
+             <h3>
+               Equipe scientifique
+             </h3>
+             <p>
+                 <a href="http://chec.uca.fr/article58.html" target="_blank">Philippe Bourdin</a> - chercheur au Centre d’Histoire « Espaces & Cultures », professeur d’histoire moderne, membre de l'Institut Universitaire de France
+             </p>
+             <p>
+                 <a href="https://fr.calameo.com/read/0051680671d9cd4d7fc00" target="_blank">Roger Gonin</a> - collectionneur de lanternes magiques et appareils stéréoscopiques; administrateur général au Festival du Court Métrage de Clermont-Ferrand de 1980 à 2014
+             </p>
+              <p>
+                 <a href="http://chec.uca.fr/article133.html" target="_blank">Cyril Triolaire</a> - chercheur au Centre d’Histoire « Espaces & Cultures », maître de conférence en études théâtrales
+             </p>
+
+         </div>
+         <div>
+             <h3>
+               Conception du site
+             </h3>
+             <p>
+                 <a href="http://msh-clermont.fr/panel-informatique-et-base-de-donn%C3%A9es#AV-Referent" target="_blank">Aurelia Vasile</a> - ingénieure d'études - Plateforme Humanités Numériques : Maison des Sciences de l'Homme
+             </p>
+         </div>
+         <div>
+             <h3>
+               Technologies utilisées
+             </h3>
+             <p>
+                 Ce site est une application web réalisée à l'aide du framework <a target="_blank" href="https://flask.palletsprojects.com/en/1.1.x/">Flask</a> de Python et le toolkit opensource <a href="https://www.sqlalchemy.org/" target="_blank">SQLAlchemy</a><br/>
+                 Les données sont stockées dans une base de données relationnelle, MariaDB<br/>
+                 La partie frontend a été réalisée avec Bootstrap, html5, css, javascript, Jquery
+                 Le déploiement en production sur les serveurs de l'université s'est fait à l'aide des clients Gunicorn, Apache et Supervisor.<br/>
+                 La mise en oeuvre du serveur a été réalisée par la <a href="https://dsi.uca.fr/" target="_blank">Direction Opérationnelle des Systèmes d'Information</a> de l'université.<br/>
+                 Pour la création des notices "lieux", nous utilisons les services web de <a href="https://www.geonames.org/" target="_blank">GeoNames</a>
+             </p>
+         </div>
+         <div>
+             <h3>
+               Hébergement
+             </h3>
+             <p>
+                Centre Régional de Ressources Informatiques<br/>
+                Campus des Cézeaux<br/>
+                24 avenue des Landais<br/>
+                63177 Aubière
+             </p>
+          </div>
+         <div>
+             <h3>
+               Mentions légales
+             </h3>
+             <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Licence Creative Commons" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/88x31.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Dataset" property="dct:title" rel="dct:type">La base de données Spectacle de curioristés</span> de l'<a xmlns:cc="http://creativecommons.org/ns#" href="https://spectacle-de-curiosites.msh.uca.fr/" property="cc:attributionName" rel="cc:attributionURL">Université Clermont Auvergne</a> est mise à disposition selon les termes de la <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">licence Creative Commons Attribution - Pas d’Utilisation Commerciale - Partage dans les Mêmes Conditions 4.0 International</a>.
+         </div>
+    </div>
+{% endblock %}

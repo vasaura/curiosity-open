@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+ <div class="container-fluid">
+         <!-- En-tête: Nom, Prénom et boutton de suppression de la personne (class Personne) -->
+        <div class="container">
+            {%if unique %}
+            <div class="row">
+                <div class="col">
+                  <header class="page-header">
+                    <h2>
+                        {% if not unique.nom %}
+                            Nom non identifié,
+                        {% else %}
+                            {{unique.nom}},
+                        {% endif %}
+                       {% if not unique.prenom %}
+                           prénom non identifié
+                       {% else %}
+                            {{unique.prenom}}
+                       {% endif %}
+                    </h2>
+                  </header>
+                </div>
+            {% if current_user.is_authenticated %}
+                <div class="col"> <a href="{{ url_for("deletePers", nr_personne = unique.id) }}" id ="suppressPerson" class="btn btn-danger" onclick="suppressPerson({{ detailsRegistres|length }})">Supprimer la personne</a></div>
+                <div class="col"> <a href="{{ url_for("modifier_personne", idPersonne = unique.id) }}" id ="modifyPerson" class="btn btn-success">Modifier la personne</a></div>
+            {% endif %}
+            </div>
+            {% endif %}
+       </div>
+
+        <!-- Affichage des données uniques de la personne (class Personne) -->
+        <div class="container">
+            <div class="row">
+                  <!-- Affichage du code unique -->
+              <div class="col-4"> <p class="font-weight-bold">Identifiant de la personne</div>
+              <div class="col-8">{{unique.id}}</div>
+
+                <!-- Affichage du sex -->
+                <div class="col-4"> <p class="font-weight-bold">Sexe</div>
+                <div class="col-8">{{unique.sexe}}</div>
+
+                <!-- Affichage de la date de naissance avec condition -->
+              {% if not unique.anneeNaissance %}
+                  <div class="col-4"> <p class="font-weight-bold">Année de naissance</p></div>
+                  <div class="col-8">- non renseigné -</div>
+              {% else %}
+                  <div class="col-4"> <p class="font-weight-bold">Année de naissance</p></div>
+                  <div class="col-8">{{unique.anneeNaissance}}</div>
+                  {% endif %}
+
+                <!-- Affichage du lieu de naissance avec condition -->
+              {% if not unique.id_lieuxNaissance %}
+                  <div class="col-4"> <p class="font-weight-bold">Lieu de naissance</p></div>
+                  <div class="col-8">- non renseigné -</div>
+              {% else %}
+                  <div class="col-4"> <p class="font-weight-bold">Lieu de naissance</p></div>
+                  <div class="col-8">{{unique.lieux_naissance.nomLieuFr}}</div>
+                  {% endif %}
+
+              <!-- Affichage du lieu du décès -->
+              {% if unique.id_lieuDeces %}
+                  <div class="col-4"> <p class="font-weight-bold">Lieu du décès</p></div>
+                  <div class="col-8">{{unique.lieux_deces.nomLieuFr}}</div>
+              {% endif %}
+
+              <!-- Affichage de la date du décès -->
+              {% if unique.dateDeces %}
+                  <div class="col-4"> <p class="font-weight-bold">Date du décès</p></div>
+                  <div class="col-8">{{unique.dateDeces}}</div>
+              {% endif %}
+
+             <!-- Affichage du champs observation -->
+              {% if unique.observations %}
+                  <div class="col-4"> <p class="font-weight-bold">Observation du chercheur</p></div>
+                  <div class="col-8">{{unique.observations}}</div>
+              {% endif %}
+
+             <!-- Affichage du champs certitude -->
+              {% if unique.certitudeNP %}
+                  <div class="col-4"> <p class="font-weight-bold">Commentaires sur la certitude de l'information</p></div>
+                  <div class="col-8">{{unique.certitudeNP}}</div>
+              {% endif %}
+
+            {% if detailsRegistres %}
+             <div class="col-4">
+                 <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm" type="button">
+                     <a href="{{url_for('persLieux', identifier=unique.id)}}">Voir tous les lieux de passage de la personne</a>
+                 </button>
+             </div>
+                 {% endif %}
+             </div>
+        </div>
+
+        <!-- Affichage des détails des registres (class Details Registre) -->
+        <div class="container small">
+
+            {% if detailsRegistres %}
+             <!--Titres et Boutton creation registre -->
+              <header class="page-header">
+                  <h3 class="pb-2 mt-3"><small class="text-muted">Voir les détails d'enregistrement</small></h3>
+              </header>
+            {% endif %}
+
+             <!--Liste registres en accordeon -->
+              <div class="mb-4">
+                <div id="accordion" class="accordion">
+                  {% for registre in detailsRegistres %}
+                      <div class="card">
+                        <!-- Affichage du lieu de passage et de la date d'enregistrement (class lieuxDeclares) -->
+                        <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#collapse{{ registre.id }}" >
+                            {% for lieu in registre.lieuxDeclares %}
+                                {% if lieu.typeLieu =="Enregistrement" %}
+                                    <a class="card-link" > Notice enregistrée à {{ lieu.lieux.nomLieuFr }} le {{ lieu.date }}</a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div id="collapse{{ registre.id }}" class="collapse" data-parent="#accordion">
+
+                            <div class="card-body">
+                                  <!-- boutton Supprimer Régistre-->
+                            {% if current_user.is_authenticated %}
+                                  <div class="row">
+                                      <div class="col-sm-6 pb-2"><a href="{{ url_for("deleteRegister", id_registre = registre.id) }}" id ="{{registre.id}}" class="btn btn-danger" onclick="suppressRegister({{registre.id}})">Supprimer l'enregistrement</a></div>
+                                        <div class="col-sm-6 pb-2"><a href="{{ url_for("modifier_registre", id_registre = registre.id) }}" id ="m{{registre.id}}" class="btn btn-info" onclick="">Modifier l'enregistrement</a></div>
+                                  </div>
+                            {% endif %}
+                                 <!-- noms et prénoms déclarés-->
+                                  <div class="row">
+                                    {% if not registre.nomOrigine %}
+                                        <div class="col-3"> <p class="font-weight-bold">Nom et prénom déclarés</p></div>
+                                        <div class="col-5">- nom ou prénom non renseignés -</div>
+                                    {% else %}
+                                        <div class="col-3"> <p class="font-weight-bold">Nom et prénom déclarés</p></div>
+                                        <div class="col-5">{{ registre.nomOrigine }}, {{ registre.prenomOrigine }}</div>
+                                    {% endif %}
+
+                                  </div>
+
+                                 <!-- Pseudonyme-->
+                                  <div class="row">
+                                    {% if registre.pseudonyme %}
+                                        <div class="col-3"> <p class="font-weight-bold">Pseudonyme</p></div>
+                                        <div class="col-5">{{ registre.pseudonyme }} </div>
+                                    {% endif %}
+                                  </div>
+
+                                   <!-- Identifiant du voyage-->
+                                  <div class="row">
+                                    {% if not registre.indexOrigine %}
+                                        <div class="col-3"> <p class="font-weight-bold">Identifiant du registre</p></div>
+                                        <div class="col-5">- non renseigné -</div>
+                                    {% else %}
+                                        <div class="col-3"> <p class="font-weight-bold">Index registre origine</p></div>
+                                        <div class="col-5">{{ registre.indexOrigine }}</div>
+                                    {% endif %}
+                                  </div>
+
+                                 <!-- Numero d'ordre de passage-->
+                                  <div class="row">
+                                    {% if not registre.nrOrdre %}
+                                        <div class="col-3"> <p class="font-weight-bold">Numéro d'enregistrement</p></div>
+                                        <div class="col-5">- non renseignées -</div>
+                                    {% else %}
+                                        <div class="col-3"> <p class="font-weight-bold">Numéro d'enregistrement</p></div>
+                                        <div class="col-5">{{ registre.nrOrdre }} </div>
+                                    {% endif %}
+                                  </div>
+
+                                 <!-- Description, metiers -->
+                                  <div class="row row-cols-2 row-cols-md-2">
+
+                                      <!-- Rubrique Description -->
+                                      <div class="col mb-4">
+                                        <div class="card bg-light mb-3" style="max-width: 40rem;">
+                                            <div class="card-header">Description de la personne</div>
+                                            <div class="card card-body">
+                                                <!-- Description générale -->
+                                                  <div class="row">
+                                                        {% if registre.description %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Description</p></div>
+                                                            <div class="col-8">{{registre.description}}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                      <!-- Taille-->
+                                                  <div class="row">
+                                                    {% if not registre.taillePersonne %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Taille</p></div>
+                                                        <div class="col-8">- non renseignée -</div>
+                                                    {% else %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Taille</p></div>
+                                                        <div class="col-8">{{ registre.taillePersonne }} m</div>
+                                                    {% endif %}
+                                                  </div>
+                                                       <!-- Age-->
+                                                  <div class="row">
+                                                    {% if not registre.agePersonne %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Age</p></div>
+                                                        <div class="col-8">- non renseigné -</div>
+                                                    {% else %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Age</p></div>
+                                                        <div class="col-8">{{ registre.agePersonne }} ans</div>
+                                                    {% endif %}
+                                                  </div>
+                                                        <!-- Annee naissance-->
+                                                  <div class="row">
+                                                    {% if registre.anneeNaissCalcule %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Année de naissance calculée</p></div>
+                                                        <div class="col-8">{{ registre.anneeNaissCalcule }}</div>
+                                                    {% endif %}
+                                                  </div>
+                                                        <!-- Autres carractéristiques-->
+                                                  <div class="row">
+                                                    {% if not registre.autresCaracteristiques %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Autres caractéristiques</p></div>
+                                                        <div class="col-8">- non renseigné -</div>
+                                                    {% else %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Autres caractéristiques</p></div>
+                                                        <div class="col-8">{{ registre.autresCaracteristiques }}</div>
+                                                    {% endif %}
+                                                  </div>
+                                                         <!-- durée du séjour-->
+                                                  <div class="row">
+                                                    {% if registre.dureeSejour %}
+                                                        <div class="col-4"> <p class="font-weight-bold">Durée du séjour</p></div>
+                                                        <div class="col-8">{{ registre.dureeSejour }}</div>
+                                                    {% endif %}
+                                                  </div>
+                                            </div>
+                                        </div>
+                                      </div>
+
+                                      <!-- Familles de metiers-->
+                                      <div class="col mb-4">
+                                        <div class="card bg-light mb-3" style="max-width: 40rem;">
+                                            <div class="card-header">Familles de métiers</div>
+                                            <div class="card card-body">
+
+                                                <!-- Famille de metiers-->
+                                              <div class="row">
+                                                {% if not registre.liensCategories%}
+                                                    <div class="col-8 mb-3">- sans précision -</div>
+                                                {% else %}
+                                                    <div class="col-8"><p class="font-weight-bold">Catégories et sous-catégories</p></div>
+                                                    {% for lienRegistreCategorie in registre.liensCategories %}
+                                                        {% if not lienRegistreCategorie.id_souscategorie %}
+                                                           <div class="col-8 pb-3" ><a href="{{ url_for("persCat",identifier= lienRegistreCategorie.categories.id) }}">{{lienRegistreCategorie.categories.labelCategorie }}</a></div>
+                                                        {% else %}
+                                                           <div class="col-8 pb-3"><a href="{{ url_for("persCat",identifier= lienRegistreCategorie.categories.id) }}">{{ lienRegistreCategorie.categories.labelCategorie }}</a> -- <a href="{{ url_for("persSousCat",identifier= lienRegistreCategorie.souscategories.id) }}">{{ lienRegistreCategorie.souscategories.labelSouscategorie }}</a></div>
+                                                        {% endif %}
+                                                     {% endfor %}
+                                                {% endif %}
+                                               </div>
+                                                <!-- Label metier déclaré-->
+                                              <div class="row">
+                                                {% if registre.professionOrigine %}
+                                                    <div class="col-4"> <p class="font-weight-bold">Métier déclaré</p></div>
+                                                    <div class="col-8">{{ registre.professionOrigine }}</div>
+                                                {% endif %}
+                                              </div>
+                                            </div>
+                                        </div>
+                                      </div>
+
+                                  </div>
+
+                                    <!-- Accompagné par et caractériqtiques physiques-->
+                                  <div class="row row-cols-2 row-cols-md-2">
+                                        <div class="col mb-4">
+                                             <div class="card bg-light mb-3" style="max-width: 40rem;">
+                                                  <div class="card-header">Voyage avec</div>
+                                                  <div class="card card-body">
+
+                                                        {% if not registre.accompagnePar %}
+
+                                                            <div class="col-8 mb-3">- sans précision -</div>
+
+                                                        {% else %}
+                                                            {% if registre.epoux == 1 %}
+                                                                 <div class="row">
+                                                                     <div class="col-8 mb-3"><a href="{{ url_for("persEpoux") }}">époux/épouse</a></div>
+                                                                 </div>
+                                                            {% endif %}
+
+                                                            {%  if registre.nbEnfants %}
+                                                                 <div class="row">
+                                                                     <div class="col-4"> <p class="font-weight-bold"><a href="{{ url_for("persEnfant") }}">Enfant</a> (nombre)</p></div>
+                                                                    <div class="col-8">{{ registre.nbEnfants }}</div>
+                                                                 </div>
+                                                            {% endif %}
+
+                                                             {%  if registre.nbAutreMembre %}
+                                                                  <div class="row">
+                                                                    <div class="col-4"> <p class="font-weight-bold">Autres memebres de la famille (nombre)</p></div>
+                                                                    <div class="col-8">{{ registre.nbAutreMembre }}</div>
+                                                                  </div>
+                                                            {% endif %}
+
+                                                             {%  if registre.nbPersSupplement %}
+                                                                  <div class="row">
+                                                                    <div class="col-4"> <p class="font-weight-bold">Autres personnes (nombre)</p></div>
+                                                                    <div class="col-8">{{ registre.nbPersSupplement }}</div>
+                                                                  </div>
+                                                            {% endif %}
+
+                                                             <div class="row">
+                                                                <div class="col-4"> <p class="font-weight-bold">Accompagné par (champs déclaré)</p></div>
+                                                                <div class="col-8">{{ registre.accompagnePar }}</div>
+                                                             </div>
+                                                        {% endif %}
+                                                  {%  if registre.voyageAvecRegistre %}
+                                                                  <div class="row">
+                                                                    <div class="col"> <p class="font-weight-bold">Voyage avec:</p></div>
+                                                                      {% for objetVoyageAvec in registre.voyageAvecRegistre %}
+                                                                          <div class="col"><a href="{{ url_for("notice", identifier=objetVoyageAvec.personnes.id) }}">{{ objetVoyageAvec.personnes.nom }}, {{ objetVoyageAvec.personnes.prenom }}</a></div>
+                                                                  {% endfor %}
+                                                                  </div>
+                                                            {% endif %}
+
+                                                   </div>
+                                             </div>
+                                        </div>
+
+                                        <!-- Caracteristiques physiques-->
+                                        <div class="col mb-4">
+                                            <div class="card bg-light mb-3" style="max-width: 40rem;">
+                                                <div class="card-header">Caracteristiques physiques</div>
+                                                <div class="card card-body">
+
+                                                  <!-- Caractéristiques physiques-->
+
+                                                        {% if not registre.caracteristiques %}
+                                                             <div class="row">
+                                                            <div class="col-8">- sans précision -</div>
+                                                             </div>
+
+                                                        {% else %}
+                                                             <div class="row">
+                                                                <div class="col-8"><p class="font-weight-bold">Caractéristiques types</p></div>
+                                                                {% for caracteristique in registre.caracteristiques %}
+                                                                 <div class="col-8 pb-3"><a href="{{ url_for("persCarracteristique",label= caracteristique.labelCaracteristique) }}">{{ caracteristique.labelCaracteristique }}</a>&nbsp; &nbsp;</div>
+                                                                {% endfor %}
+                                                             </div>
+                                                            <div class="row">
+                                                                <div class="col-4"><p class="font-weight-bold">Caractéristiques déclarés</p></div>
+                                                                <div class="col-8">{{ registre.caracteristiquesPhysiques }}</div>
+                                                            </div>
+                                                        {% endif %}
+                                                </div>
+
+                                            </div>
+                                          </div>
+                                  </div>
+
+                                 <!-- Deplacements-->
+                                  <div class="row">
+                                        <div class="col mb-4">
+                                            <div class="card bg-light mb-3" style="max-width: 100rem;">
+                                                <div class="card-header">Lieux déclarés </div>
+                                                <div class="card card-body">
+                                                     <table class="table" >
+                                                              <thead class="table-info">
+                                                                  <tr>
+                                                                    <th>Type de lieu</th>
+                                                                    <th>Nom du lieu</th>
+                                                                    <th>Date</th>
+                                                                  </tr>
+                                                              </thead>
+                                                              <tbody>
+                                                                  {% for lieu in registre.lieuxDeclares %}
+                                                                  {% if lieu.typeLieu == "Naissance"%}
+                                                                      <tr>
+                                                                          <td>Lieu de naissance déclaré</td>
+                                                                          <td>
+                                                                              {% if lieu.labelLieuDeclare %} <!-- si lieu déclaré, on l'affiche, sinon, on affiche le lieu normalisé-->
+                                                                                  {{lieu.labelLieuDeclare}}
+                                                                              {% elif lieu.id_lieu %}
+                                                                                  {{ lieu.lieux.nomLieuFr }}
+                                                                              {% else %}
+                                                                              - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                          <td>
+                                                                              {% if lieu.date %}
+                                                                              {{ lieu.date }}
+                                                                              {% else %}
+                                                                              - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                      </tr>
+                                                                  {% endif %}
+                                                                  {% if lieu.typeLieu == "Domicile"%}
+                                                                      <tr>
+                                                                          <td>Lieu du domicile déclaré</td>
+                                                                          <td>
+                                                                              {% if lieu.labelLieuDeclare %}
+                                                                                    {{ lieu.labelLieuDeclare|capitalize}}
+                                                                               {% elif lieu.id_lieu %}
+                                                                                    {{ lieu.lieux.nomLieuFr }}
+                                                                              {% else %}
+                                                                              - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                          <td>
+                                                                              {% if lieu.date %}
+                                                                              {{ lieu.date }}
+                                                                              {% else %}
+                                                                                - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                      </tr>
+                                                                  {% endif %}
+                                                                  {% if lieu.typeLieu == "Délivrance du passeport"%}
+                                                                      <tr>
+                                                                          <td>Lieu de délivrance du passeport déclaré</td>
+                                                                          <td>
+                                                                              {% if lieu.labelLieuDeclare %}
+                                                                                {{ lieu.labelLieuDeclare|capitalize}}
+                                                                              {% elif lieu.id_lieu %}
+                                                                                 {{ lieu.lieux.nomLieuFr }}
+                                                                              {% else %}
+                                                                              - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                          <td>
+                                                                              {% if lieu.date %}
+                                                                              {{ lieu.date }}
+                                                                              {% else %}
+                                                                                - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                      </tr>
+                                                                  {% endif %}
+                                                                  {% if lieu.typeLieu == "Dernier Passage"%}
+                                                                      <tr>
+                                                                          <td>Lieu du passage précédent déclaré</td>
+                                                                          <td>
+                                                                              {% if lieu.labelLieuDeclare %}
+                                                                                    {{ lieu.labelLieuDeclare}}
+                                                                              {% elif lieu.id_lieu %}
+                                                                                    {{ lieu.lieux.nomLieuFr }}
+                                                                              {% else %}
+                                                                              - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                          <td>
+                                                                              {% if lieu.date %}
+                                                                              {{ lieu.date }}
+                                                                              {% else %}
+                                                                                - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                      </tr>
+                                                                  {% endif %}
+                                                                  {% if lieu.typeLieu == "Destination"%}
+                                                                      <tr>
+                                                                          <td>Lieu de destination déclaré</td>
+                                                                          <td>
+                                                                              {% if lieu.labelLieuDeclare %}
+                                                                                    {{ lieu.labelLieuDeclare|capitalize}}
+                                                                              {% elif lieu.id_lieu %}
+                                                                                    {{ lieu.lieux.nomLieuFr }}
+                                                                              {% else %}
+                                                                              - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                          <td>
+                                                                              {% if lieu.date %}
+                                                                              {{ lieu.date }}
+                                                                              {% else %}
+                                                                                - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                      </tr>
+                                                                  {% endif %}
+                                                                      {% if lieu.typeLieu == "Visa"%}
+                                                                      <tr>
+                                                                          <td>Autre visa</td>
+                                                                          <td>
+                                                                              {% if lieu.labelLieuDeclare %}
+                                                                                {{ lieu.labelLieuDeclare|capitalize}}
+                                                                              {% elif lieu.id_lieu %}
+                                                                                  {{ lieu.lieux.nomLieuFr }}
+                                                                              {% else %}
+                                                                              - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                          <td>
+                                                                              {% if lieu.date %}
+                                                                              {{ lieu.date }}
+                                                                              {% else %}
+                                                                                - non renseignée -
+                                                                              {% endif %}
+                                                                          </td>
+                                                                      </tr>
+                                                                  {% endif %}
+                                                                {% endfor %}
+
+
+                                                             </tbody>
+                                                     </table>
+                                                 </div>
+                                            </div>
+                                        </div>
+                                  </div>
+
+
+                                  <!-- Sources: archives, cote, type doc-->
+                                  <div class="row">
+                                     <div class="col mb-4">
+                                          <div class="card bg-light" style="max-width: 100rem;">
+                                                <div class="card-header">Sources d'archives et Notes</div>
+
+                                                <div class="card card-body">
+
+                                                            <!--Archive-->
+                                                      <div class="row">
+
+                                                        {% if not registre.nomArchive %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Source archivistique</p></div>
+                                                            <div class="col-8">- non renseignée -</div>
+                                                        {% else %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Source archivistique</p></div>
+                                                            <div class="col-8">{{ registre.nomArchive }}</div>
+                                                        {% endif %}
+                                                      </div>
+
+                                                            <!-- Cote-->
+                                                      <div class="row">
+                                                        {% if not registre.cote %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Cote</p></div>
+                                                            <div class="col-8">- non renseignée -</div>
+                                                        {% else %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Cote</p></div>
+                                                            <div class="col-8">{{ registre.cote }} </div>
+                                                        {% endif %}
+                                                        </div>
+
+                                                            <!-- Type document-->
+                                                      <div class="row">
+                                                        {% if not registre.natureDoc %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Type du document</p></div>
+                                                            <div class="col-8">- non renseignée -</div>
+                                                        {% else %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Type du document</p></div>
+                                                            <div class="col-8">{{ registre.natureDoc }} </div>
+                                                        {% endif %}
+                                                        </div>
+
+                                                             <!-- Numéro de la photo-->
+                                                      <div class="row">
+                                                            {% if not registre.photoArchive %}
+                                                                <div class="col-4"> <p class="font-weight-bold">Consultez le document d'archive</p></div>
+                                                                <div class="col-8">- non renseignée -</div>
+                                                            {% elif  current_user.is_authenticated %}
+                                                                <div class="col-4"> <p class="font-weight-bold">Consultez le document d'archive</p></div>
+                                                                <div class="col-8"><a href="../static/images/Photos_BDD/{{registre.photoArchive }}.jpg" alt="photo d'archive"  style="display: inline-block; width: 65px; height: 65px; background-image: url('../static/images/image.jpg');" target="_blank"></a></div> <!--width: 65px; height: 65px; must be the same as the image size-->
+                                                            {% endif %}
+                                                       </div>
+
+                                                             <!-- Commentaires-->
+                                                      <div class="row">
+                                                        {% if not registre.commentaires %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Observations</p></div>
+                                                            <div class="col-8">- non renseignées -</div>
+                                                        {% else %}
+                                                            <div class="col-4"> <p class="font-weight-bold">Observations</p></div>
+                                                            <div class="col-8">{{ registre.commentaires }} </div>
+                                                        {% endif %}
+                                                      </div>
+                                                  </div>
+                                          </div>
+                                     </div>
+                                  </div>
+
+                                <!-- Fin du bloc: class="card-body" à pas dépasser-->
+                            </div>
+                        </div>
+                  </div>
+
+                  {% endfor %}
+              </div>
+              {% if current_user.is_authenticated %}
+                <div class="mt-2">
+                    <a href="{{ url_for("creer_registre",  idPersonne=unique.id) }}" class="btn btn-info" onclick="">
+                        {% if detailsRegistres %}
+                        Créer un nouvel enregistrement
+                        {% elif current_user.is_authenticated %}
+                        Créer un enregistrement
+                        {% endif %}
+                    </a>
+                </div>
+              {% endif %}
+              </div>
+
+        </div>
+             <script>
+
+                             function suppressPerson(nombreRegistre){
+                                var link_a_pers = document.getElementById("suppressPerson");
+                                if (nombreRegistre === 0) {
+                                   if (confirm('Etes-vous sûr(e) de vouloir supprimer la notice?\nCette opération risque de supprimer le lien avec la personne d\'accompagnement\nL\'action est irréversible')===false ){
+                                       link_a_pers.setAttribute('href', "");
+                                   }
+
+                                } else {
+                                   alert('Pour supprimer la notice de la personne, supprimer d\'abord les registres')
+                                   link_a_pers.setAttribute('href', "");
+                                   }
+                            }
+
+                                function suppressRegister(idregister){
+                                   var link_a = document.getElementById(idregister);
+                                   if (confirm('Etes-vous sûr(e) de vouloir supprimer le régistre? Cette action est irréversible')===false ){
+                                       link_a.setAttribute('href', "");
+                                   }
+
+                                }
+                            </script>
+
+ </div>
+
+{% endblock %}
