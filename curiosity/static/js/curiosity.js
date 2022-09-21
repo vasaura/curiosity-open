@@ -1,5 +1,4 @@
 
-
 function estDansLaListe(list, valeur){
            var estdansLaliste = false;
 
@@ -15,7 +14,7 @@ function estDansLaListe(list, valeur){
           return estdansLaliste;
 }
 
-//Fonction qui ajoute une icone rouge et supprime la saisie si le lieu n'existe pas dans la liste des lieu de l'autocoplete
+//Fonction qui ajoute une icone rouge et supprime la saisie si le lieu n'existe pas dans la liste des lieu de l'autocomplete
 function removeValueWhenIncorrectPlace(listeLieu, valeur, idInput, idDiv) {
 
     //récupère le input html avec le lieu normalisé
@@ -29,7 +28,8 @@ function removeValueWhenIncorrectPlace(listeLieu, valeur, idInput, idDiv) {
 
     // crée la balise a < href="#myModalPlace" data-toggle="modal">
     const elementLinkModal = document.createElement("a");
-     // ajoute les attributs : "href" = "#myModalPlace" et "data-toggle" = "modal"
+
+    // ajoute les attributs : "href" = "#myModalPlace" et "data-toggle" = "modal"
     elementLinkModal.setAttribute("href", "#myModalPlace");
     elementLinkModal.setAttribute("data-toggle", "modal");
 
@@ -65,7 +65,7 @@ function removeValueWhenIncorrectPlace(listeLieu, valeur, idInput, idDiv) {
      }
 }
 
- // desactiver le mode submit du formulaire lorsqu'on appuie sur Enter
+ // desactiver le mode submit du formulaire lorsqu'on appuie sur Enter du clavier
 function removeEnterSubmit (idHtml){
       $("#"+idHtml).keypress(function(e) {
               //Enter key
@@ -75,14 +75,57 @@ function removeEnterSubmit (idHtml){
             });
 }
 
+// griser le button submit des formulaires pour empêcher d'appuyer plusieurs fois sur creer-formulaire
+function shadeButtonSubmit (){
+      $(document).ready(function(){
+                $("form.form-once-only").submit(function () {
+                    $(this).find(':button').prop('disabled', true);
+                });
+            });
+}
+
 // fonction pour afficher la carte leaflet sans erreurs
  function displayMapInModal(idModal) {
   $("#"+idModal).on('shown.bs.modal', function () {
       setTimeout(function () {
-          map.invalidateSize();
+          mymap.invalidateSize();
       }, 10);
   });
 }
 
-
+//fonction pour réaliser l'autocomplete pour plusieurs variables
+function autocompleMultiple(id,sourceData){
+     var accentMap = {
+                "à": "a",
+                "ö": "o",
+                "â": "a",
+                "é":"e",
+                "è":"e",
+                "ô":"o",
+                "î":"i",
+                "ï":"i",
+                "û":"u",
+                "ç":"c",
+                "ù":"u",
+                "ë":"e",
+                "É":"E",
+                "ú":"u",
+                "ô":"o"
+                };
+     var normalize = function(term) {
+        var ret = "";
+        for (var i = 0; i < term.length; i++) {
+          ret += accentMap[term.charAt(i)] || term.charAt(i);
+        }
+        return ret;
+      };
+     $(id).autocomplete({
+      source: function( request, response ) {
+              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
+              response( $.grep( sourceData, function( item ){
+                  return matcher.test( item ) || matcher.test(normalize(item));
+              }) );
+          }
+        });
+}
 

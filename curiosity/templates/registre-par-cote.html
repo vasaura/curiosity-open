@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div class="container">
+        <header class="page-header"><h3>Notices d'enregistrement correspondant à la cote : <small class="text-muted">{{ cote_archive }}</small></h3></header>
+  </div>
+
+    <div class="container">
+        <p class="lead">Il y a <strong>{{ personnes.total }}</strong> de notices d'enregistrement</p>
+        <ul class="list-group">
+        {% for registre in personnes.items %}
+               <li class="list-group-item">
+             <p>Notice d'enregistrement de {{ registre.nomOrigine or ' -- ' }}, {{ registre.prenomOrigine or ' -- ' }} à
+            {% for lieu in registre.lieuxDeclares %}
+                 {% if lieu.typeLieu =="Enregistrement" %}
+                       <a href="{{ url_for('registre', identifier_registre=registre.id) }}">{{ lieu.lieux.nomLieuFr }} le {{ lieu.date }}</a>
+                {% endif %}
+            {% endfor%}
+            </p>
+             </li>
+        {% endfor %}
+        </ul>
+         {% include "includes/pagination.html" %}
+    </div>
+
+{% endblock %}

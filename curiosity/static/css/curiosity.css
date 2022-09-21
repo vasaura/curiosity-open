@@ -22,6 +22,11 @@
   border-color: #005cbf;
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
 }
+.curiosity::placeholder {
+  color: #6c757d;
+  opacity: 1;
+  font-size: 0.8em;
+}
 .curiosity-cat-dropdown-item {
   display: block;
   width: 100%;
@@ -144,15 +149,6 @@ tr:nth-child(even) {
   background-color: #043d7a;
 }
 
-.fa-drum{
-  color: #043d7a;
-  margin-right: 6px;
-}
-
-.far fa-minus-square{
-  color: #043d7a;
-}
-
 #mapid {
   height: 280px;
   width: 500px;
@@ -169,26 +165,34 @@ tr:nth-child(even) {
   padding: 1.25rem;
 }
 .card-header_curiosity:after {
-    font-family: 'FontAwesome';
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
     content: "\f068";
     float: right;
+    color:#043d7a;
 }
 
 .card-header_curiosity.collapsed:after {
     /* symbol for "collapsed" panels */
+    font-family: "Font Awesome 5 Free";
     content: "\f067";
+    font-weight: 900;
+    color:#043d7a;
 }
 
 .accordion .card-header_curiosity:after {
-    font-family: FontAwesome;
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
     content: "\f068";
     float: right;
     color:#043d7a;
 }
 .accordion .card-header_curiosity.collapsed:after {
     /* symbol for "collapsed" panels */
+    font-family: "Font Awesome 5 Free";
     content: "\f067";
     color: #043d7a;
+    ont-weight: 900;
 }
 /*
     DEMO STYLE
@@ -329,4 +333,9 @@ ul {
 .scrollable{
     overflow-y: auto;
     max-height: 300px;
+}
+
+.curiosity-popup{
+        font-family: "Helvetica Neue",Arial,Helvetica,sans-serif;
+        font-size: 12px;
 }

@@ -8,12 +8,51 @@
 
     <!-- Sidebar avec les filtres de recherche -->
 
-    <nav id="sidebar" class="active"> <!--pour ne pas afficher la sidebar class="active"-->
+    <nav id="sidebar"> <!--pour ne pas afficher la sidebar class="active"-->
         <div class="sidebar-header">
            <h5>Critères de recherche</h5>
          </div>
     <form id="filterID" method="POST" action="{{ url_for("index") }}">
-    <!-- Sexe-->
+     <!-- Chercher par lieu de naissance-->
+        <div class="card border-info mb-3 active">
+            <article class="card-group-item">
+                    <header class="card-header">Lieu de naissance</header>
+            </article>
+            <div class="filter-content">
+               <div class="card-body">
+            <input class="form-control curiosity-control" type="search" id ="bornPlace" name ="bornPlace" value="{{ filtreTemporaire["lieu naissance"] }}" aria-label="Search">
+                </div>
+            </div>
+        </div>
+        <!-- Chercher par lieu d'enregistrement-->
+        <div class="card border-info mb-3 active">
+            <article class="card-group-item">
+                <header class="card-header">Lieu d'enregistrement</header>
+            </article>
+            <div class="filter-content">
+                <div class="card-body">
+                    <input class="form-control curiosity-control" type="search" id ="registerPlace" name ="registerPlace" value="{{ filtreTemporaire["lieu enregistrement"] }}" aria-label="Search">
+                </div>
+            </div>
+        </div>
+
+     <!-- Chercher par année d'enregistrement-->
+        <div class="card border-info mb-3 active">
+            <article class="card-group-item">
+                <header class="card-header">Période d'enregistrement</header>
+            </article>
+            <div class="filter-content form-row mb-3 mr-0 ml-0 mt-3">
+                 <div class="col">
+                      <input type="search" class="form-control curiosity" placeholder="année début" id="debut" name="debut" value="{{ filtreTemporaire["Début"] }}" aria-label="Search">
+                    </div>
+                    <div class="col">
+                      <input type="search" class="form-control curiosity" placeholder="année fin" id="fin" name="fin" value="{{ filtreTemporaire["Fin"] }}" aria-label="Search">
+                    </div>
+
+            </div>
+        </div>
+
+        <!-- Sexe-->
         <div class="card border-info mb-3 active">
             <article class="card-group-item">
                 <header class="card-header">
@@ -22,7 +61,7 @@
                 <div class="filter-content">
                     <div class="card-body">
                         <label class="form-check">
-                          <input class="form-check-input" type="checkbox" id="femme" name="sexe"
+                          <input class="form-check-input curiosity-control" type="checkbox" id="femme" name="sexe"
                                         value="Femme"
                                {% for sexeChecked in filtreTemporaire["Sexe"] %}
                                      {% if sexeChecked == "Femme" %}
@@ -32,7 +71,7 @@
                           >Femme
                         </label>
                         <label class="form-check">
-                          <input class="form-check-input" type="checkbox" id="homme" name="sexe" value="Homme"
+                          <input class="form-check-input curiosity-control" type="checkbox" id="homme" name="sexe" value="Homme"
                                   {% for sexeChecked in filtreTemporaire["Sexe"] %}
                                      {% if sexeChecked == "Homme" %}
                                             checked
@@ -40,9 +79,9 @@
                               {% endfor %}>Homme
                         </label>
                         <label class="form-check">
-                          <input class="form-check-input" type="checkbox" id="inconnu" name="sexe" value="Inconnu"
+                          <input class="form-check-input curiosity-control" type="checkbox" id="inconnu" name="sexe" value="Inconnu"
                            {% for sexeChecked in filtreTemporaire["Sexe"] %}
-                                     {% if filtreSexe == "Inconnu" %}
+                                     {% if sexeChecked == "Inconnu" %}
                                             checked
                                       {% endif %}
                            {% endfor %}>Inconnu
@@ -63,7 +102,7 @@
                                 {% for categ in categories %}
                                     {% if categ.souscategories %}
                                   <label class="form-check text-uppercase">
-                                      <input type="checkbox" class="form-check-input" name="categorie" value="{{categ.labelCategorie}}"
+                                      <input type="checkbox" class="form-check-input curiosity-control" name="categorie" value="{{categ.labelCategorie}}"
                                         {% for categorieChecked in filtreTemporaire["categorie"] %}
                                              {% if categorieChecked == categ.labelCategorie %}
                                                     checked
@@ -73,7 +112,7 @@
                                   </label>
                                     {% for souscategorie in categ.souscategories %}
                                         <label class="form-check ml-2">
-                                            <input type="checkbox" class="form-check-input" name="souscategorie" value="{{souscategorie.labelSouscategorie}}"
+                                            <input type="checkbox" class="form-check-input curiosity-control" name="souscategorie" value="{{souscategorie.labelSouscategorie}}"
                                              {% for souscategorieChecked in filtreTemporaire["souscategorie"] %}
                                                  {% if souscategorieChecked == souscategorie.labelSouscategorie %}
                                                         checked
@@ -84,7 +123,7 @@
                                     {% endfor %}
                                       {% else %}
                                    <label class="form-check text-uppercase">
-                                      <input type="checkbox" class="form-check-input" name="categorie" value="{{categ.labelCategorie}}"
+                                      <input type="checkbox" class="form-check-input curiosity-control" name="categorie" value="{{categ.labelCategorie}}"
                                            {% for categorieChecked in filtreTemporaire["categorie"] %}
                                          {% if categorieChecked == categ.labelCategorie %}
                                                 checked
@@ -110,13 +149,13 @@
                         <div class="form-group scrollable">
                                 {% for caracteristique in caracteristiquesPysiques %}
                                   <label class="form-check">
-                                      <input type="checkbox" class="form-check-input" name="physique" value="{{caracteristique.labelCaracteristique}}"
+                                      <input type="checkbox" class="form-check-input curiosity-control" name="physique" value="{{caracteristique[0]}}"
                                       {% for physiqueChecked in filtreTemporaire["Caractéristiques physiques"]  %}
-                                          {% if physiqueChecked == caracteristique.labelCaracteristique %}
+                                          {% if physiqueChecked == caracteristique[0] %}
                                           checked
                                           {% endif %}
                                       {% endfor %}
-                                      >{{caracteristique.labelCaracteristique}}
+                                      >{{caracteristique[0]}}
                                   </label>
                               {% endfor %}
                         </div>
@@ -124,7 +163,6 @@
                 </div>
             </article>
      </div>
-
      <!-- Accompagnés par epoux.se-->
         <div class="card border-info mb-3 active">
             <article class="card-group-item">
@@ -135,14 +173,14 @@
                     <div class="card-body">
                         <div class="row">
                         <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="epoux" value="oui"
+                              <input class="form-check-input curiosity-control" type="radio" name="epoux" value="oui"
                                      {% if filtreTemporaire["Accompagnés par epoux.se"]=="oui" %}
                                       checked
                                      {% endif %}
                               >Oui
                             </label></div>
                          <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="epoux" value="non"
+                              <input class="form-check-input curiosity-control" type="radio" name="epoux" value="non"
                                       {% if filtreTemporaire["Accompagnés par epoux.se"]=="non" %}
                                       checked
                                      {% endif %}
@@ -163,14 +201,14 @@
                     <div class="card-body">
                         <div class="row">
                         <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="enfants" value="oui"
+                              <input class="form-check-input curiosity-control" type="radio" name="enfants" value="oui"
                                      {% if filtreTemporaire["enfants"]=="oui" %}
                                       checked
                                      {% endif %}
                               >Oui
                             </label></div>
                          <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="enfants" value="non"
+                              <input class="form-check-input curiosity-control" type="radio" name="enfants" value="non"
                                       {% if filtreTemporaire["enfants"]=="non" %}
                                       checked
                                      {% endif %}
@@ -181,163 +219,214 @@
                 </div>
             </article>
         </div>
-     <!-- Accompagnés par autres membres de la famille-->
+    <!-- Chercher par type de document-->
         <div class="card border-info mb-3 active">
             <article class="card-group-item">
-                <header class="card-header">
-                    <h6 class="title">Accompagnés par autres membres de famille</h6>
-                </header>
-                <div class="filter-content">
-                    <div class="card-body">
-                        <div class="row">
-                        <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="membreFamille" value="oui"
-                                     {% if filtreTemporaire["autre membre de famille"] =="oui" %}
-                                      checked
-                                     {% endif %}
-                              >Oui
-                            </label></div>
-                         <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="membreFamille" value="non"
-                                      {% if filtreTemporaire["autre membre de famille"]=="non" %}
-                                      checked
-                                     {% endif %}
-                                 >Non
-                            </label></div>
-                        </div>
-                    </div>
-                </div>
+                    <header class="card-header">Type de document</header>
             </article>
+            <div class="filter-content">
+               <div class="card-body">
+               <select class="form-control curiosity-control" name ="typedoc" id="typedoc">
+                  <option selected value="{{ filtreTemporaire["Type de document"] }}">{{ filtreTemporaire["Type de document"] }}</option>
+                   {% for doc in listeTypeDocu %}
+
+                   <option class="curiosity-control" value="{{ doc[0] }}">{{ doc[0] }}</option>
+                   {% endfor %}
+                </select>
+                </div>
+            </div>
         </div>
-    <!-- Accompagnés par autres personnes-->
+     <!-- Chercher par cote d'archive-->
         <div class="card border-info mb-3 active">
             <article class="card-group-item">
-                <header class="card-header">
-                    <h6 class="title">Accompagnés par autres personnes</h6>
-                </header>
-                <div class="filter-content">
-                    <div class="card-body">
-                        <div class="row">
-                        <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="autrePersonne" value="oui"
-                                     {% if filtreTemporaire["autre personnes"] == "oui" %}
-                                      checked
-                                     {% endif %}
-                              >Oui
-                            </label></div>
-                         <div class="col"> <label class="form-check">
-                              <input class="form-check-input" type="radio" name="autrePersonne" value="non"
-                                      {% if filtreTemporaire["autre personnes"]== "non" %}
-                                      checked
-                                     {% endif %}
-                                 >Non
-                            </label></div>
-                        </div>
-                    </div>
-                </div>
+                    <header class="card-header">Cote d'archive</header>
             </article>
+            <div class="filter-content">
+               <div class="card-body">
+            <input class="form-control curiosity-control" type="search" id ="coteArchive" name ="coteArchive" value="{{ filtreTemporaire["Cote d'archive"] }}" aria-label="Search">
+                </div>
+            </div>
+        </div>
+
+     <!-- Chercher par auteur de la collecte-->
+        <div class="card border-info mb-3 active">
+            <article class="card-group-item">
+                    <header class="card-header">Collecte realisée par :</header>
+            </article>
+            <div class="filter-content">
+               <div class="card-body">
+               <select class="form-control curiosity-control" name ="collecte" id="collecte">
+                  <option selected value="{{ filtreTemporaire["Auteur de la collecte"] }}">{{ filtreTemporaire["Auteur de la collecte"] }}</option>
+                   {% for person in collector %}
+                   <option class="curiosity-control" value="{{ person[0] }}">{{ person[0] }}</option>
+                   {% endfor %}
+                </select>
+                </div>
+            </div>
         </div>
     <!-- Bouton Activer Filter-->
-        <button type="button" class="btn btn-secondary ml-2 col-5" onclick="clearForm(this.form)">Réinitialiser</button>
-        <button type="submit" class="btn btn-info ml-1 col-6">Filtrer</button>
+        <button type="submit" name ="submit_button" value ="reset" class="btn btn-secondary ml-2 col-5" onclick="clearForm(this.form)">Réinitialiser</button>
+        <button type="submit" name ="submit_button" value ="filter" class="btn btn-info ml-1 col-6">Filtrer</button>
+          {% if current_user.is_authenticated %}
+              <!-- Button to Open the Modal -->
+        <button type="button" class="btn btn-outline-info ml-1 mt-1" style="width:98%" data-toggle="modal" data-target="#myModal">
+          Télécharger
+        </button>
+
+<!-- The Modal -->
+<div class="modal" id="myModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h4 class="modal-title">Choisissez la version d'export</h4>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+
+      <!-- Modal body -->
+      <div class="modal-body" >
+        <div>
+            <div>
+          <input type="radio" id="dreduit" name="outputdata" value="dreduit" checked>
+          <label for="dreduit">Données réduites</label>
+        </div>
+          <input type="radio" id="dcomplet" name="outputdata" value="dcomplet">
+          <label for="dcomplet">Données complètes</label>
+        </div>
+      </div>
+      <!-- Modal footer -->
+      <div class="modal-footer">
+          <button type="submit" name="submit_button" value="download" formaction="{{ url_for("index") }}" class="btn btn-outline-info ml-1"><i class="fa fa-download"></i>Télécharger</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+        {% endif %}
     </form>
     </nav>
 
 
 <!-- Contenu de la page: l'index-->
     <div id="content">
-    <!--Boutton Recherche avancée-->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <button type="button" id="sidebarCollapse" class="btn btn-info">
-                <i class="fas fa-align-left"></i>
-                <span>Filtres de recherche</span>
-            </button>
-            <span class="ml-2 text-center"><span class="text-muted">Filtres sélectionnés : </span>
-                {% for key, value in filtreTemporaire.items() %} {{ key }}: <span class="text-success">{{ value }}</span>
-                {% endfor %}
-            </span>
+        <!--Boutton Recherche avancée-->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="btn btn-info">
+                    <i class="fas fa-align-left"></i>
+                    <span>Filtres de recherche</span>
+                </button>
+                <span class="ml-2 text-center"><span class="text-muted">Filtres sélectionnés : </span>
+                    {% for key, value in filtreTemporaire.items() %} {{ key }}: <span class="text-success">{{ value }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+        </nav>
+
+        <!-- Page Content avec l'index de personnes -->
+        <div class="row">
+            <div class="col-6"> <header class="page-header"><h1>Index des personnes</h1></header>
+            </div>
         </div>
-    </nav>
-    <!-- Page Content avec l'index de personnes -->
-          <div class="row">
-            <div class="col-6"> <header class="page-header"><h1>Index des personnes</h1></header></div>
-          </div>
+            {% if personnes|length > 0 %}
+                    <p class="lead">Il y a {{personnes|length}} personnes(s) dans la base de données</p>
             <form method="GET">
-             <table id="curiosity" class="table" style="width:100%">
-              <thead>
-              <tr>
-                <th>Nom</th>
-                <th>Prenom</th>
-                <th>Année de naissance</th>
-                  <th>Passages</th>
-              </tr>
-          </thead>
-          <tbody>
-             {% for pers in personnes %}
-              <tr>
-                  <td>
-                      {% if pers.nom %}
-                      <a href="{{url_for('notice', identifier=pers.id)}}">{{ pers.nom }}</a>
-                        {% else %} <a href="{{url_for('notice', identifier=pers.id)}}">non identifé</a>
-                       {% endif %}
-                  </td>
-                  <td>{% if pers.prenom  %}
-                      {{ pers.prenom }}
-                        {% else %}
-                      non identifé
-                      {% endif %}
-                  <td>
-                    {% if pers.anneeNaissance %}
-                    {{ pers.anneeNaissance }}
-                    {% else %}
-                    non identifée
-                    {% endif %}
-                </td>
-               </td>
-                    <td>
-                      <a href="{{url_for('persLieux', identifier=pers.id)}}">Voir tous les lieux de passage de la personne</a>
-                  </td>
-              </tr>
-            {% endfor %}
-         </tbody>
-        </table>
-        </form>
+                 <table id="table_id" class="table" style="width:100%"></table>
+            </form>
+
+          {% endif %}
+    </div>
+</div>
+
+      {% block scripts %}
         <script>
-            $(document).ready(function() {
-                $('#curiosity').DataTable( {
-                    "language": {
+
+        var tagsLieux = {{ lieux|safe }};
+        autocompleMultiple ("#bornPlace",tagsLieux)
+
+        var tagsLieuxEnreg = {{ lieuxEnregistrement|safe }};
+        autocompleMultiple ("#registerPlace",tagsLieuxEnreg)
+
+        var tagsCotes = {{ listeCotes|safe }};
+        autocompleMultiple ("#coteArchive",tagsCotes);
+
+        dataset= {{ personnes|safe }};
+
+        $(document).ready(function () {
+              $('#table_id').DataTable({
+                   "pageLength": 30,
+                   "lengthMenu": [ 10, 30, 50, 75, 100 ],
+                  "data": dataset,
+                "columns": [
+                  {title: "Id"},
+                  {title: "Nom"},
+                  {title: "Prénom"},
+                  {title: "Année de naissance"},
+                  {title: "Lieu de naissance"},
+                  {title: "Nombre d'enregistrements"},
+                  {title: "Carte"}
+                ],
+                   "language": {
                         "url": "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
                             },
-                     "lengthMenu": [ 25, 50, 75, 100 ]
-                        } );
-                    } );
-            $(document).ready(function () {
+                  "columnDefs": [
+                      {
+                        "targets": 2,
+                        "orderData": [ 2, 1 ]
+                        },
+                        {
+                            "targets": 1,
+                            "orderData": [ 1, 2 ],
+                             "render": function ( data,type,row) {
+                                url = '/personne/'+row[0];
+                                return '<a href="'+url+'"> '+data+' </a>';
+                            }
+                        },
+                       {
+                            "targets": 6,
+                            "render": function ( data,type,row) {
+                                url = '/personneLieux/'+row[0];
+                                return '<a href="'+url+'"> <i class="fas fa-map-marked-alt"></i></a>';
+                            }
+                        },
+                    ]
+              });
+            });
+
+
+        $(document).ready(function () {
             $('#sidebarCollapse').on('click', function () {
                 <!-- active ou desactive la class css active de sidebar-->
                 $('#sidebar').toggleClass('active');
                     });
-
                 });
-            function clearForm(form) {
-               var inputs = form.getElementsByTagName('input');
-                for (var i = 0; i<inputs.length; i++) {
-                    switch (inputs[i].type) {
-                        // case 'hidden':
-                        case 'text':
-                            inputs[i].value = '';
-                            break;
-                        case 'radio':
-                        case 'checkbox':
-                            inputs[i].checked = false;
-                                }
-                        }
-                return false;
+
+        $('#filterID').submit(function() {
+            $('#myModal').modal('hide');
+        });
+
+
+        //fonction pour vider le formulaire lorsque les champs sont remplis, ou les boutons cochés
+        function clearForm(form) {
+           var inputs = form.getElementsByClassName('curiosity-control');
+           for (var i = 0; i<inputs.length; i++) {
+                switch (inputs[i].type) {
+                    // case 'hidden':
+                    case 'text':
+                        inputs[i].value = '';
+                        break;
+                    case 'radio':
+                    case 'checkbox':
+                    case 'search':
+                        inputs[i].value = '';
+                        break;
+                            }
+                    }
+             $('select').val('1'); // vide le champs select-option
+            return false;
                     }
         </script>
-
-    </div>
-
-</div>
-
+   {% endblock %}
 {% endblock %}

@@ -12,78 +12,11 @@
             </div>
          </form>
 
-    <!-- The Modal -->
-     <div class="container">
-
-        <div class="modal fade" aria-labelledby="myLargeModalLabel" id="myModalPlace" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-
-            <!-- Modal Header -->
-            <div class="modal-header">
-              <h4 class="modal-title">Création d'un nouveau lieu</h4>
-              <button type="button" class="close" data-dismiss="modal">&times;</button>
-            </div>
-
-            <!-- Modal body -->
-            <div class="modal-body ui-front">
-
-                <form class="container" method="POST" id="creationPlaceFormId">
-                     <div class="form-group">
-                          <label for="nomLieu">Nom du lieu <small style="color: #bd2130">(choisir l'option "city, village...")</small></label>
-                        <input type="text" class="form-control" id="nomLieu" name="nomLieu" maxlength="64" placeholder="ex : Villers-Cotterêts">
-                      </div>
-                     <div class="form-group">
-                        <label for="pays">Pays</label>
-                        <input type="text" class="form-control" id="pays" name="pays" maxlength="20" placeholder="ex : France">
-                      </div>
-                     <div class="form-group">
-                            <label for="region">Région</label>
-                            <input type="text" class="form-control" id="region" name="region" maxlength="20" placeholder="ex : France">
-                          </div>
-                     <div class="form-group">
-                            <label for="depart">Département</label>
-                            <input type="text" class="form-control" id="depart" name="depart" maxlength="20" placeholder="ex : France">
-                          </div>
-                     <div class="form-group">
-                        <label for="lat">Latitude</label>
-                        <input type="text" class="form-control" id="lat" name="latitude" maxlength="64" placeholder="ex : 49.25311" onchange="updateMap()">
-                      </div>
-                     <div class="form-group">
-                        <label for="lng">Longitude</label>
-                        <input type="text" class="form-control" id="lng" name="longitude" maxlength="64" placeholder="ex : 3.09003" onchange="updateMap()">
-                      </div>
-                     <div class="form-group">
-                          <label for="codeINSEE">Code INSEE (pour les localités françaises)</label>
-                          <p><small class="text-muted">(connectez-vous au <a href="https://public.opendatasoft.com/explore/dataset/correspondance-code-insee-code-postal/information/" target="_blank">site de l'INSEE)</a></small></p>
-                        <input type="text" class="form-control" id="codeINSEE" name="codeINSEE" maxlength="64" placeholder="ex : 02810">
-                      </div>
-                     <div class="form-group">
-                        <label for="idGeonames">Identifiant Geonames</label>
-                        <input type="text" class="form-control" id="idGeonames" name="idGeonames" maxlength="64" placeholder="ex : 2968405">
-                      </div>
-
-                     <div id="map" style="height: 400px; width: 700px;"></div>
-
-                             <!-- Modal footer -->
-                     <div class="modal-footer">
-                           <button type="button" id ="closeModal" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-                           <button type="button" id="idBtnSavePlace" class="btn btn-primary">Sauvegarder</button>
-                     </div>
-                </form>
-
-                <div id="successAlert" class="alert alert-success" role="alert" style="display:none;"></div>
-                <div id="errorAlert" class="alert alert-danger" role="alert" style="display:none;"></div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
+        {% include 'includes/modal.html' %}
 
 
         <!-- Afficher les chmaps à compléter -->
-        <form class="container-fluid" method="POST" id="creationFormId" action="{{url_for("creer_registre", idPersonne=personneUnique.id)}}">
+        <form class="container-fluid form-once-only" method="POST" id="creationFormId" action="{{url_for("creer_registre", idPersonne=personneUnique.id)}}">
 
         <!-- Formulaire avec les sources et les commentaires -->
         <div class="card bg-light mb-3" style="max-width: 100rem;">
@@ -92,28 +25,58 @@
                      <div class="card card-body">
                             <div class="form-group required">
                              <label for="archive">Nom de l'institution de conservation de la source</label>
-                             <input type="text" class="form-control" id="archive" name="archive" placeholder="ex : BOURG-EN-BRESSE-Archives municipales" value="{{ registreTemporaire["nomArchive"] }}">
+                             <input type="text" class="form-control" id="archive" name="archive" placeholder="ex : BOURG-EN-BRESSE-Archives municipales" value="{{ lastRecord.nomArchive }}">
                             </div>
 
                            <div class="form-group required">
                             <label for="cote">Cote</label>
-                            <input type="text" class="form-control" id="cote" name="cote" placeholder="ex : AM Agen 2i20" value="{{ registreTemporaire["cote"] }}">
+                            <input type="text" class="form-control" id="cote" name="cote" placeholder="ex : AM Agen 2i20" value="{{ lastRecord.cote }}">
                            </div>
 
                            <div class="form-group">
                             <label for="typeDoc">Type du document</label>
-                            <input type="text" class="form-control" id="typeDoc" maxlength="64" name="typeDoc" placeholder="ex : Registre visas" value="{{ registreTemporaire["natureDoc"] }}">
+                            <input type="text" class="form-control" id="typeDoc" maxlength="64" name="typeDoc" placeholder="ex : Registre visas" value="{{ lastRecord.natureDoc }}">
                            </div>
 
                            <div class="form-group">
-                            <label for="photo">Numéro de la photo</label>
-                            <input type="text" class="form-control" id="photo" maxlength="64" name="photo" placeholder="ex : AM_Agen_2i20_7386" value="{{ registreTemporaire["photoArchive"] }}">
+                            <label for="typeDoc">Collecte réalisée par</label>
+                            <input type="text" class="form-control" id="collecte" maxlength="64" name="collecte" placeholder="ex : Roger Gonin" value="{{ lastRecord.collecte or '' }}">
                            </div>
+
+                          <div class="containerPhotos" id="containerPhotos">
+                                       <label for="photo">Numéro de la photo</label>
+                              {% if not registreTemporaire["photoArchive"] %}
+                               <div class="photo-link-div form-group row">
+                                           <div class="col-3">
+                                                <input type="text" class="form-control" id="photo" maxlength="64" name="photo" placeholder="ex : AM_Agen_2i20_7386">
+                                           </div>
+                                           <div class="col-1">
+                                                 <div class="input-group-append">
+                                                   <button class="btn btn-outline-success add-new-photo font-weight-bold btn-sm" type="button">+</button>
+                                                 </div>
+                                           </div>
+                               </div>
+                              {% else %}
+                                  {% for photo in registreTemporaire["photoArchive"] %}
+                                      <div class="photo-link-div form-group row">
+                                           <div class="col-3">
+                                                <input type="text" class="form-control" id="photo" maxlength="64" name="photo" placeholder="ex : AM_Agen_2i20_7386" value="{{ photo }}">
+                                           </div>
+                                           <div class="col-1">
+                                                 <div class="input-group-append">
+                                                   <button class="btn btn-outline-success add-new-photo font-weight-bold btn-sm" type="button">+</button>
+                                                   <button class="btn btn-outline-danger delete-photo-line font-weight-bold btn-sm ml-1" type="button">-</button>
+                                                 </div>
+                                           </div>
+                                      </div>
+                                  {% endfor %}
+                              {% endif %}
+                          </div>
 
                           <div class="form-group">
                             <label for="commentaires">Commentaires et observations</label>
                             <textarea class="form-control" id="commentaires" name="commentaires" rows="3">{{ registreTemporaire["commentaires"] }}</textarea>
-                        </div>
+                          </div>
                      </div>
                  </div>
             </div>
@@ -128,13 +91,18 @@
                                   <div class="form-group col-md-6 required">
                                     <label for="lieuPassage">Lieu d'enregistrement administratif</label>
                                       <div class="input-container-curiosity" id="idContainerLieuNormaliser0">
-                                         <input autocomplete="off" type="text" class="form-control" id="idLieuNormaliser0" name="lieuPassage" value="{{ registreTemporaire["lieuPassage"] }}" onblur="myFunctionBlurFocus(value, id, 0)">
+                                         <input autocomplete="off" type="text" class="form-control" id="idLieuNormaliser0" name="lieuPassage"
+                                                  {% for lieu in lastRecord.lieuxDeclares %}
+                                                    {% if lieu.typeLieu =="Enregistrement" %}
+                                                    value="{{ lieu.lieux.nomLieuFr }}, {{ lieu.lieux.departement }}, {{ lieu.lieux.pays }}, {{ lieu.lieux.id }}" onblur="myFunctionBlurFocus(value, id, 0)"
+                                                    {% endif %}
+                                                  {% endfor %}>
                                       </div>
                                   </div>
 
                                   <div class="form-group col-md-6 required">
                                      <label for="datePassage">Date d'enregistrement</label>
-                                     <input type="date" class="form-control" id="dataPassage" name="datePassage"  value="{{ registreTemporaire["dateEnregistremnt"] }}" >
+                                     <input type="date" class="form-control" id="dataPassage" name="datePassage" value="{{ registreTemporaire["dateEnregistremnt"] }}">
                                   </div>
                               </div>
                             <!-- Nom Prénom-->
@@ -208,196 +176,175 @@
         </div>
 
         <!-- Formulaire avec les métiers -->
-         <div class="card bg-light mb-3" style="max-width: 100rem;">
+          <div class="card bg-light mb-3" style="max-width: 100rem;">
           <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#champsPersonMetiers" aria-controls="champsPersonMetiers">Ajouter les metiers de la personne</div>
                  <div class="collapse" id="champsPersonMetiers">
                      <div class="card card-body containerCatSouscat" id = "containerCatSouscat">
 
-                         <!-- Metier déclaré-->
-                          <div class="form-group col-md-12">
-                                <label for="metier" class="font-weight-bold small">Métiers déclarés</label>
-                                <input type="text" class="form-control" id="metier" name="metier" maxlength="100" placeholder="ex : violoniste faisant voir des figures en cire aux athées" value="{{ registreTemporaire["professionOrigine"] }}">
+                          <div class="containerMetiersFrequent" id="containerMetiersFrequent">
+
+                               <!-- Metiers fréquents categories et souscatégories: LABEL-->
+                                <div class="frequente-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-4">
+                                   <div class="col-3">
+                                   <label for="metierFrequent" class="font-weight-bold small">Métiers fréquents</label>
+                                   </div>
+                                   <div class="col-3">
+                                   <label for="categorieFrequente" class="font-weight-bold small">Categorie</label>
+                                   </div>
+                                   <div class="col-3">
+                                   <label for="souscategorieFrequente" class="font-weight-bold small">Souscategorie</label>
+                                   </div>
+                             </div>
+
+                                <!-- Metiers fréquents categories et souscatégories: INPUT-->
+                             {% if not registreTemporaire["metiersCatSoucatFrequent"] %}
+                                   <div class="frequente-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-5">
+                                     <div class="col-3">
+                                            <select class="custom-select my-1 mr-sm-2" id="metierFrequent" name="metierFrequent" onchange="addCatSoucatFrequent(this, 0)";>
+                                                    <option selected></option>
+                                                    {% for metierFrequentcatsoucat in listeMetiersCourants %}
+                                                        <option value = "{{ metierFrequentcatsoucat[0] }}">{{metierFrequentcatsoucat[0]}}</option>
+                                                    {% endfor %}
+                                            </select>
+                                     </div>
+                                     <div class="col-3">
+                                            <input type="text" class="form-control" id="categorieFrequente0" name="categorieFrequente" maxlength="100" placeholder="ex : categorie" >
+                                     </div>
+                                     <div class="col-3">
+                                            <input type="text" class="form-control" id="souscategorieFrequente0" name="souscategorieFrequente" maxlength="100" placeholder="ex : souscategorie" >
+                                     </div>
+
+                                     <div class="col-1">
+                                         <div class="input-group-append">
+                                           <button class="btn btn-outline-success add-new-metier font-weight-bold btn-sm" type="button">+</button>
+                                         </div>
+                                     </div>
+                                   </div>
+
+                             {% else %}
+                                  {% for tuplemetiercatsoucattemporaire in registreTemporaire["metiersCatSoucatFrequent"] %}
+                                     <div class="frequente-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-5">
+                                         <div class="col-3">
+                                                <select class="custom-select my-1 mr-sm-2" id="metierFrequent" name="metierFrequent" onchange="addCatSoucatFrequent(this, 0)";>
+                                                    <option value="{{ tuplemetiercatsoucattemporaire[0] }}">{{ tuplemetiercatsoucattemporaire[0] }}</option>
+                                                        {% for metierFrequentcatsoucat in listeMetiersCourants %}
+                                                            {% if tuplemetiercatsoucattemporaire[0] != metierFrequentcatsoucat %}
+                                                            <option value = "{{ metierFrequentcatsoucat[0] }}">{{metierFrequentcatsoucat[0]}}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                </select>
+                                         </div>
+                                         <div class="col-3">
+                                                <input type="text" class="form-control" id="categorieFrequente0" name="categorieFrequente" maxlength="100" placeholder="ex : categorie" value="{{ tuplemetiercatsoucattemporaire[1] or '' }}">
+                                         </div>
+                                         <div class="col-3">
+                                                <input type="text" class="form-control" id="souscategorieFrequente0" name="souscategorieFrequente" maxlength="100" placeholder="ex : souscategorie" value="{{ tuplemetiercatsoucattemporaire[2] or '' }}">
+                                         </div>
+
+                                         <div class="col-1">
+                                             <div class="input-group-append">
+                                               <button class="btn btn-outline-success add-new-metier font-weight-bold btn-sm" type="button">+</button>
+                                               <button class="btn btn-outline-danger delete-metier-line font-weight-bold btn-sm ml-1" type="button">-</button>
+                                             </div>
+                                         </div>
+                                     </div>
+                                  {% endfor %}
+                             {% endif %}
                           </div>
 
-                     {% if not registreTemporaire["catSoucat"]%}
-
-                         <!-- Categorie et souscategories metiers-->
-                         <div class="container containerMetier">
-                             <!-- Boutton + et - -->
-                            <div class="col-sm mb-3">
-                                <div class="input-group-append">
-                                  <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">Ajouter une catégorie</button>
-                                  <!-- <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2" type="button">Supprimer une catégorie</button> -->
-                                </div>
-                            </div>
+                          <!-- Autres metiers declarés categories et souscatégoriess -->
+                         <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-4">
+                             <div class="col-3">
+                                  <label for="metier" class="font-weight-bold small">Autres métiers déclarés</label>
+                             </div>
                          </div>
+                         <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-4">
+                              <div class="col-3">
+                                 <input type="text" class="form-control" id="metier" name="metier" maxlength="100" placeholder="ex : violoniste faisant voir des figures en cire" value="{{ registreTemporaire["professionOrigine"] }}">
+                              </div>
+                            {% if not registreTemporaire["catSoucat"]%}
+                                <div class="col-3">
+                                   <button class="btn btn-outline-success add-new-line font-weight-bold" type="button">Ajouter une catégorie</button>
+                                </div>
+                             {% else %}
+                                  <div class="container containerMetier">
+                                     <div class="form-row">
 
+                                            {% for catSoucat in registreTemporaire["catSoucat"] %}
+                                             <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-3">
+                                             <!-- Categories-->
+                                                <div class="form-group col-md-6" id="catSousCat{{loop.index}}"> <!-- loop.index permet de retrouver le numéro d'index de la boucle -->
+                                                  <label for="cat{{loop.index}}" class="font-weight-bold small">Selectionner une catégorie de métiers</label>
+                                                  <select class="custom-select my-1 mr-sm-2" id="cat{{loop.index}}" name="cat" onChange="generateSubCategory(value, {{loop.index}})">
+                                                        <option selected value="{{ catSoucat[0] }}">{{ catSoucat[0] }}</option> <!-- persister la catégorie saisie-->
+                                                         {% for objetCategorie in categories %} <!-- charge les autres objets catégories fournis aux html dans le return template-->
+                                                             {% if objetCategorie.labelCategorie != catSoucat[0]  %} <!-- condition pour ne pas doubler l'affichage de la catégorie d'origine-->
+                                                            <option value ="{{objetCategorie.labelCategorie}}">{{objetCategorie.labelCategorie}}</option> <!-- ajoute les catégories restantes-->
+                                                             {% endif %}
+                                                         {% endfor %}
+                                                  </select>
+                                                </div>
 
-                         {% else %}
-                          <div class="container containerMetier">
-                             <div class="form-row">
-
-                         {% for catSoucat in registreTemporaire["catSoucat"] %}
-                                 <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-3">
-                                     <!-- Categories-->
-                                        <div class="form-group col-md-6" id="catSousCat{{loop.index}}"> <!-- loop.index permet de retrouver le numéro d'index de la boucle -->
-                                          <label for="cat{{loop.index}}" class="font-weight-bold small">Selectionner une catégorie de métiers</label>
-                                          <select class="custom-select my-1 mr-sm-2" id="cat{{loop.index}}" name="cat" onChange="generateSubCategory(value, {{loop.index}})">
-                                                <option selected value="{{ catSoucat[0] }}">{{ catSoucat[0] }}</option> <!-- persister la catégorie saisie-->
-                                                 {% for objetCategorie in categories %} <!-- charge les autres objets catégories fournis aux html dans le return template-->
-                                                     {% if objetCategorie.labelCategorie != catSoucat[0]  %} <!-- condition pour ne pas doubler l'affichage de la catégorie d'origine-->
-                                                    <option value ="{{objetCategorie.labelCategorie}}">{{objetCategorie.labelCategorie}}</option> <!-- ajoute les catégories restantes-->
-                                                     {% endif %}
-                                                 {% endfor %}
-                                          </select>
-                                        </div>
-
-                                     <!-- Souscategories-->
-                                        <div class="form-group col-md-5" id="divSousCat{{loop.index}}" {% if catSoucat[1] == "aucune" %} style="visibility: hidden" {% endif %}> <!-- si la catégorie ne contient pas de sous-catégories, cacher la div des soucategories-->
-                                            <label for="sousCat{{loop.index}}" class="font-weight-bold small">Ajouter une sous-catégorie</label>
-                                            <select multiple class="form-control" id="sousCat{{loop.index}}" name="sousCat">
-                                                <option selected value="{{ catSoucat[1] }}">{{ catSoucat[1] }}</option> <!-- persiste la souscatégorie saisie-->
-                                            {% for objetCategorie in categories %}  <!-- charge les objets catégories fournis aux html dans le return template-->
-                                                {% if objetCategorie.labelCategorie == catSoucat[0]  %} <!-- Si le label de la catégorie chargé == le label de la catégorie affichée-->
-                                                    {% for sousCat in objetCategorie.souscategories %} <!-- pour chaque sous-catégorie de la catégorie séléctionnée-->
-                                                        {% if catSoucat[1] != sousCat.labelSouscategorie  %} <!-- condition pour ne pas doubler l'affichage de la souscatégories d'origine-->
-                                                     <option value="{{ sousCat.labelSouscategorie }}">{{ sousCat.labelSouscategorie }}</option> <!-- ajoute les souscatégories restantes-->
+                                             <!-- Souscategories-->
+                                                <div class="form-group col-md-5" id="divSousCat{{loop.index}}" {% if catSoucat[1] == " " %} style="visibility: hidden" {% endif %}> <!-- si la catégorie ne contient pas de sous-catégories, cacher la div des soucategories-->
+                                                    <label for="sousCat{{loop.index}}" class="font-weight-bold small">Ajouter une sous-catégorie</label>
+                                                    <select multiple class="form-control" id="sousCat{{loop.index}}" name="sousCat">
+                                                        <option selected value="{{ catSoucat[1] }}">{{ catSoucat[1] }}</option> <!-- persiste la souscatégorie saisie-->
+                                                    {% for objetCategorie in categories %}  <!-- charge les objets catégories fournis au html dans le return template-->
+                                                        {% if objetCategorie.labelCategorie == catSoucat[0]  %} <!-- Si le label de la catégorie chargé == le label de la catégorie affichée-->
+                                                            {% for sousCat in objetCategorie.souscategories %} <!-- pour chaque sous-catégorie de la catégorie séléctionnée-->
+                                                                {% if catSoucat[1] != sousCat.labelSouscategorie  %} <!-- condition pour ne pas doubler l'affichage de la souscatégories d'origine-->
+                                                             <option value="{{ sousCat.labelSouscategorie }}">{{ sousCat.labelSouscategorie }}</option> <!-- ajoute les souscatégories restantes-->
+                                                                {% endif %}
+                                                            {% endfor %}
                                                         {% endif %}
                                                     {% endfor %}
-                                                {% endif %}
+                                                    </select>
+                                                </div>
+                                            </div>
                                             {% endfor %}
-                                            <option>aucune</option>
-                                            </select>
-                                        </div>
-
-                                      <!-- Bouttons-->
-                                      <div class="col-1">
-                                         <div class="input-group-append mt-4 pt-1">
-                                            <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-2" type="button">-</button>
-                                         </div>
-                                      </div>
-                                 </div>
-
-                         {% endfor %}
-
-                             </div>
-                           <!-- Boutton Ajouter une catégorie -->
-                          <div class="form-row">
-                                    <div class="col-sm">
-                                        <div class="input-group-append">
-                                          <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">Ajouter une catégorie</button>
-                                          <!-- <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2" type="button">Supprimer une catégorie</button> -->
-                                        </div>
-                                    </div>
-                          </div>
-                          </div>
-
-
-                     {% endif %}
+                                     </div>
+                                            <!-- Boutton Ajouter une catégorie -->
+                                     <div class="form-row">
+                                            <div class="col-sm">
+                                                <div class="input-group-append">
+                                                  <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">Ajouter une catégorie</button>
+                                                  <!-- <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2" type="button">Supprimer une catégorie</button> -->
+                                                </div>
+                                            </div>
+                                     </div>
+                                  </div>
+                             {% endif %}
+                         </div>
 
                      </div>
                  </div>
-         </div>
+          </div>
 
          <!-- Formulaire avec les caractéristiques physiques-->
          <div class="card bg-light mb-3" style="max-width: 100rem;">
               <div class="card-header_curiosity collapsed" data-toggle="collapse" href="#caracterisquesPhysiques" aria-controls="caracterisquesPhysiques">Ajouter les caractéristiques physiques de la personne</div>
              <div class="collapse" id="caracterisquesPhysiques">
                   <div class="card card-body">
-
-                     <div class="form-group col-md-12">
-                        <label for="carrPhys">Description des caractéristiques physiques</label>
-                        <input type="text" class="form-control" id="carrPhys" name="carrPhys" placeholder="ex : une cicatrice à la joue gauche" value="{{ registreTemporaire["caracteristiquesPhysiques"] }}">
-                     </div>
-                    <div class="container">
-                        <div class="row pb-3">
-                             <div class="form-check-inline">
-                                <label class="form-check-label" for = "borgne">
-                                    {% if registreTemporaire["borgne"] %}
-                                <input class="form-check-input" type="checkbox" id="borgne" name="borgne" value="{{ registreTemporaire["borgne"] }}" checked> Borgne
-                                  {% else %}
-                                     <input class="form-check-input" type="checkbox" id="borgne" name="borgne"> Borgne
-                                     {% endif %}
-                                </label>
-                             </div>
-                              <div class=" form-check-inline">
-                                <label class="form-check-label" for="aveugle">
-                                     {%if registreTemporaire["aveugle"]  %}
-                                     <input class="form-check-input" type="checkbox" id="aveugle" name="aveugle" value="{{ registreTemporaire["aveugle"] }}" checked> Aveugle
-                                   {% else %}
-                                    <input class="form-check-input" type="checkbox" id="aveugle" name="aveugle"> Aveugle
-                                     {% endif %}
-                                </label>
-                             </div>
-                              <div class="form-check-inline">
-                                <label class="form-check-label" for="cul-de-jatte">
-                                      {%if registreTemporaire["culJatte"]  %}
-                                     <input class="form-check-input" type="checkbox" id="cul-de-jatte" name="cul-de-jatte" value="{{ registreTemporaire["culJatte"] }}" checked> Cul-de-jatte
-                                    {% else %}
-                                <input class="form-check-input" type="checkbox" id="cul-de-jatte" name="cul-de-jatte"> Cul-de-jatte
-                                     {% endif %}
-                                </label>
-                              </div>
-                        </div>
-                        <div class="row pb-3">
-                             <div class=" form-check-inline">
-                                <label class="form-check-label" for="unijambiste">
-                                    {%if registreTemporaire["unijambiste"]  %}
-                                    <input class="form-check-input" type="checkbox" id="unijambiste" name="unijambiste" value="{{ registreTemporaire["unijambiste"] }}" checked> Unijambiste
-                                    {% else %}
-                                  <input class="form-check-input" type="checkbox" id="unijambiste" name="unijambiste"> Unijambiste
-                                     {% endif %}
-                                </label>
-                             </div>
-                              <div class=" form-check-inline">
-                                <label class="form-check-label" for="manchot">
-                                    {%if registreTemporaire["manchot"]  %}
-                                    <input class="form-check-input" type="checkbox" id="manchot" name="manchot" value="{{ registreTemporaire["manchot"] }}" checked> Manchot
-                                    {% else %}
-                                  <input class="form-check-input" type="checkbox" id="manchot" name="manchot"> Manchot
-                                     {% endif %}
-                                </label>
-                             </div>
-                              <div class="form-check-inline">
-                                <label class="form-check-label" for="ampute">
-                                    {%if registreTemporaire["ampute"]  %}
-                                    <input class="form-check-input" type="checkbox" id="ampute" name="ampute" value="{{ registreTemporaire["ampute"] }}" checked> Amputé de la main du doigt ou du pied
-                                    {% else %}
-                                  <input class="form-check-input" type="checkbox" id="ampute" name="ampute"> Amputé de la main du doigt ou du pied
-                                     {% endif %}
-                                </label>
-                              </div>
-                        </div>
-                        <div class="row pb-3">
-                             <div class=" form-check-inline">
-                                <label class="form-check-label" for="cicatrice">
-                                     {%if registreTemporaire["cicatrice"]  %}
-                                    <input class="form-check-input" type="checkbox" id="cicatrice" name="cicatrice" value="{{ registreTemporaire["cicatrice"] }}" checked> Cicatrice
-                                    {% else %}
-                                  <input class="form-check-input" type="checkbox" id="cicatrice" name="cicatrice"> Cicatrice
-                                     {% endif %}
-                                </label>
-                             </div>
-                              <div class=" form-check-inline">
-                                <label class="form-check-label" for="verole">
-                                     {%if registreTemporaire["verole"]  %}
-                                    <input class="form-check-input" type="checkbox" id="verole" name="verole" value="{{ registreTemporaire["verole"] }}" checked> Vérole
-                                    {% else %}
-                                  <input class="form-check-input" type="checkbox" id="verole" name="verole"> Vérole
-                                     {% endif %}
-                                </label>
-                             </div>
-                              <div class="form-check-inline">
-                                <label class="form-check-label" for="autreCaracteristiques">
-                                    {%if registreTemporaire["autreCaracteristiques"]  %}
-                                     <input class="form-check-input" type="checkbox" id="autreCaracteristiques" name="autreCaracteristiques" value="{{ registreTemporaire["autreCaracteristiques"] }}" checked> Autres caractéristiques
-                                    {% else %}
-                                  <input class="form-check-input" type="checkbox" id="autreCaracteristiques" name="autreCaracteristiques"> Autres caractéristiques
-                                    {% endif %}
-                                </label>
-                              </div>
-                        </div>
-                    </div>
+                          <div class="container-fluid">
+                                     <div class="form-group col-md-12">
+                                        <label for="carrPhys">Description des caractéristiques physiques</label>
+                                        <input type="text" class="form-control" id="carrPhys" name="carrPhys" placeholder="ex : une cicatrice à la joue gauche" value="{{ registreTemporaire["caracteristiquesPhysiques"] }}">
+                                     </div>
+                                      {% for caracteristique in caracteristiquesPysiques %}
+                                        <div class="form-group col-md-12">
+                                              <label class="form-check">
+                                                  <input type="checkbox" class="form-check-input" name="physique" value="{{caracteristique[0]}}"
+                                                  {% for physiqueChecked in registreTemporaire["physiqueNormalise"]  %}
+                                                      {% if physiqueChecked == caracteristique[0] %}
+                                                      checked
+                                                      {% endif %}
+                                                  {% endfor %}
+                                                  >{{caracteristique[0]}}
+                                              </label>
+                                        </div>
+                                      {% endfor %}
+                          </div>
 
                   </div>
              </div>
@@ -439,7 +386,8 @@
                               </div>
                            </div>
                       </div>
-                  <!--Voyage Avec Identifiant personne-->
+
+                      <!--Voyage Avec Identifiant personne-->
                        <div class="container-fluid containerVoyage">
                           <div class="form-group">
                                <div class="row row-cols-2 mt-2">
@@ -507,7 +455,6 @@
                                 <div class="col-2">
                                     <label for="listeDates">Date</label>
                                 </div>
-
                          </div>
                     {% else %}
                         <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-4">
@@ -559,41 +506,106 @@
          </div>
 
 
-     {% block scripts %}
+    {% block scripts %}
 
            <script>
-                     var tagsLieux = {{ lieux|safe }}
-                     $("#idLieuNormaliser0").autocomplete({
-                      source: function( request, response ) {
-                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
-                              response( $.grep( tagsLieux, function( item ){
-                                  return matcher.test( item );
-                              }) );
-                          }
+
+          var  tagsLieux={{ lieux|safe }};
+                     autocompleMultiple("#idLieuNormaliser0", tagsLieux);
+
+                     autocompleMultiple("#typeDoc", {{ typeDocument|safe}});
+
+                     autocompleMultiple("#archive", {{ listeNomsArchive|safe }});
+
+
+                     //PHOTOS. FONCTION QUI PERMET DE GENERER DES LIGNES AVEC INPUT PHOTOS
+                     $(document).ready(function() {
+                         $("#containerPhotos").on("click", ".add-new-photo", function (event) {
+                            event.preventDefault();
+
+                            var lignenewphoto = `<div class="photo-link-div form-group row">
+                                               <div class="col-3">
+                                                    <input type="text" class="form-control" id="photo" maxlength="64" name="photo" value="{{ registreTemporaire["photoArchive"] }}">
+                                               </div>
+                                               <div class="col-1">
+                                                     <div class="input-group-append">
+                                                       <button class="btn btn-outline-success add-new-photo font-weight-bold btn-sm" type="button">+</button>
+                                                       <button class="btn btn-outline-danger delete-photo-line font-weight-bold btn-sm ml-1" type="button">-</button>
+                                                     </div>
+                                               </div>
+                                          </div> `;
+
+                            $("#containerPhotos").append($(lignenewphoto));
+
+                            $("#containerPhotos").on("click", ".delete-photo-line", function (event) {
+                                event.preventDefault();
+                                var current = $(this),
+                                    parent  = current.parents(".photo-link-div");
+                                    parent.remove();
+                                    });
+                                });
+                           });
+                    function addCatSoucatFrequent(labelMetier, nbClick) {
+                        var indexmetier = labelMetier.selectedIndex;
+                        var metierChoisi = labelMetier.options[indexmetier].value;
+
+                        //récupération de l'élement HTML <Input> pour les soucategories et les categories
+                        var sousCatFrequent = document.getElementById("souscategorieFrequente"+nbClick);
+                        var catFrequent = document.getElementById("categorieFrequente"+nbClick);
+
+                        {% for metierFrequent in listeMetiersCourants %}
+                                if (metierChoisi === "{{ metierFrequent[0]|safe }}"){
+                                            {% if metierFrequent|length == 3 %}
+                                        sousCatFrequent.value = "{{ metierFrequent[2]|safe }}";
+                                        catFrequent.value = "{{ metierFrequent[1]|safe }}";
+                                            {% elif metierFrequent|length == 2 %}
+                                        catFrequent.value = "{{ metierFrequent[1]|safe }}";
+                                        sousCatFrequent.value = "";
+                                           {% endif %}
+                                        }
+                        {% endfor %}
+                    }
+
+                     // METIERS FREQUENTS. FONCTION QUI PERMET DE GENERER LES CATEGORIES ET LES SOUSCATEGORIES
+                     nbMetiersCourants = 0;
+                     $(document).ready(function() {
+                         $("#containerCatSouscat").on("click", ".add-new-metier", function (event) {
+                            event.preventDefault();
+                            nbMetiersCourants =nbMetiersCourants +1;
+
+                     var newMetierLine = `<div class="frequente-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-5">
+                             <div class="col-3">
+                                    <select class="custom-select my-1 mr-sm-2" id="metierFrequent`+nbMetiersCourants+`" name="metierFrequent" onchange="addCatSoucatFrequent(this,` +nbMetiersCourants+ `)";>  onchange="addCatSoucatFrequent(this, 0)";
+                                            <option selected></option>
+                                            {% for metierFrequentcatsoucat in listeMetiersCourants %}
+                                                <option value = "{{ metierFrequentcatsoucat[0]|safe}}">{{metierFrequentcatsoucat[0]|safe}}</option>
+                                            {% endfor %}
+                                    </select>
+                             </div>
+                             <div class="col-3">
+                                    <input type="text" class="form-control" id="categorieFrequente`+nbMetiersCourants+`" name="categorieFrequente" maxlength="100" placeholder="ex : categorie" value="{{ registreTemporaire["professionOrigine"] }}">
+                               </div>
+                             <div class="col-3">
+                                    <input type="text" class="form-control" id="souscategorieFrequente`+nbMetiersCourants+`" name="souscategorieFrequente" maxlength="100" placeholder="ex : souscategorie" value="{{ registreTemporaire["professionOrigine"] }}">
+                               </div>
+                             <div class="col-1">
+                                     <div class="input-group-append">
+                                       <button class="btn btn-outline-success add-new-metier font-weight-bold btn-sm" type="button">+</button>
+                                       <button class="btn btn-outline-danger delete-metier-line font-weight-bold btn-sm ml-1" type="button">-</button>
+                                     </div>
+                             </div>
+                         </div>`;
+                     $("#containerMetiersFrequent").append($(newMetierLine));
                         });
-
-                     var tagsDoc = {{ typeDocument|safe}};
-                     $("#typeDoc").autocomplete({
-                      source: function( request, response ) {
-                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
-                              response( $.grep( tagsDoc, function( item ){
-                                  return matcher.test( item );
-                              }) );
-                          }
+                     $("#containerMetiersFrequent").on("click", ".delete-metier-line", function (event) {
+                        event.preventDefault();
+                        var current = $(this),
+                            parent  = current.parents(".frequente-link-div");
+                            parent.remove();
                         });
+                });
 
-                     var tagsNomArchive = {{ listeNomsArchive|safe }};
-                     $("#archive").autocomplete({
-                      source: function( request, response ) {
-                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
-                              response( $.grep( tagsNomArchive, function( item ){
-                                  return matcher.test( item );
-                              }) );
-                          }
-                        });
-
-                     // FONCTION QUI PERMET DE GÉNÉRER LES SOUSCATEGORIES EN FCT DE LA CATÉGORIE CHOISIE
-
+                    // FONCTION QUI PERMET DE GÉNÉRER LES SOUSCATEGORIES EN FCT DE LA CATÉGORIE CHOISIE
                     // la fonction prend deux attributs: la valeur de <option> et un numero
                     function generateSubCategory(value, nbClick) {
                         //récupération de l'élement HTML <div> pour les soucategories (qui contient la balise label et la balise select)
@@ -608,12 +620,12 @@
                         // supprimer le contenu du select dans souscategories (dans le cas où l'on change de catégorie au sein du même composant "catégorie")
                         sousCat.options.length = 0;
 
-                        //Ajout de l'option Choisir dans les souscatégories systématiquement
+                        //Ajout de l'option ' ' (chaine vide) dans les souscatégories systématiquement
                         var option = document.createElement("option");
-                        option.text ='aucune'
+                        option.text =' ';
                         sousCat.add(option);
 
-                        {% for objetCategorie in categories %}
+                        {% for objetCategorie in categories %} // le |safe c'est pour l'encodage utf-8
                             if (value === "{{ objetCategorie.labelCategorie | safe }}") {
                                 {% for sousCat in objetCategorie.souscategories %}
                                     // on rend visible la div des souscatégories
@@ -628,22 +640,22 @@
                             }
                         {% endfor %}
 
-                    // sélectionne par défaut le premier élement de la liste de souscatégories (choisir...).
+                        // sélectionne par défaut le premier élement de la liste de souscatégories (" ").
                         sousCat.selectedIndex = "0";
                     }
 
-                    <!-- AJOUT DU SCRIPT POUR MULTIPLIER LES LIGNES DES METIERS -->
+                    <!-- MULTIPLIER LES LIGNES DES METIERS DECLARES-->
                     nbCategorie = parseInt({{ registreTemporaire["catSoucat"]|length }}); // recupère le nombre de catégories déja affichées
                     nBclick = nbCategorie ;
                     $(document).ready(function() {
-                     $("#containerCatSouscat").on("click", ".add-new-line", function (event) {
+                    $("#containerCatSouscat").on("click", ".add-new-line", function (event) {
                         event.preventDefault();
                         nBclick =nBclick +1;
                         var new_element = `<div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-3">
                                         <div class="form-group col-md-6" id="catSousCat`+ nBclick+`">
                                           <label class="font-weight-bold small" for="cat`+ nBclick+`">Selectionner une catégorie de métiers</label>
                                           <select class="custom-select my-1 mr-sm-2" id="cat`+ nBclick+`" name="cat" onChange="generateSubCategory(value,`+ nBclick+`)">
-                                                <option selected>aucune</option>
+                                                <option selected></option>
                                                 {% for objetCategorie in categories %}
                                                    <option value ="{{objetCategorie.labelCategorie}}">{{objetCategorie.labelCategorie}}</option>
                                                 {% endfor %}
@@ -664,7 +676,7 @@
 
                         $("#containerCatSouscat").append($(new_element));
                      });
-                     $("#containerCatSouscat").on("click", ".delete-current-line", function (event) {
+                    $("#containerCatSouscat").on("click", ".delete-current-line", function (event) {
                         event.preventDefault();
                         var current = $(this),
                             parent  = current.parents(".new-link-div");
@@ -672,20 +684,18 @@
                      });
                     });
 
-                    <!-- AJOUT DU SCRIPT POUR MULTIPLIER LES LIGNES POUR VOYAGE AVEC -->
+                 <!-- SCRIPT POUR MULTIPLIER LES LIGNES POUR VOYAGE AVEC -->
                     $(document).ready(function() {
                      $("#containerVoyageAvec").on("click", ".add-new-line", function (event) {
                         event.preventDefault();
-                        var new_element = `
-                        <div class="new-link-div row row-cols-1 mb-2">
+                        var new_element = `<div class="new-link-div row row-cols-1 mb-2">
                                       <div class="col-4"><input type="number" class="form-control" name="voyageAvecIdPers" placeholder="ex : 875"></div>
                                       <div class="col-2"><div class="input-group-append">
                                       <button class="btn btn-outline-success add-new-line font-weight-bold btn-sm mt-2 mb-2" type="button">+</button>
                                       <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-2" type="button">-</button>
                                       </div>
                                       </div>
-                                  </div>   {{ typeDocument }}
-                        `;
+                                  </div>`;
                         $("#containerVoyageAvec").append($(new_element));
                         });
 
@@ -697,9 +707,9 @@
                      });
                     });
 
-                     <!-- AJOUT DU SCRIPT POUR MULTIPLIER LES LIGNES DES LIEUX DECLARES -->
+                <!-- SCRIPT POUR MULTIPLIER LES LIGNES DES LIEUX DECLARES -->
                      nBLieux = parseInt({{ registreTemporaire["lieuxDeclares"]|length }});
-                     nBNewLieu=nBLieux
+                     nBNewLieu=nBLieux;
 
                      $(document).ready(function() {
                      $("#containerLieuxDelares").on("click", ".add-new-line", function (event) {
@@ -707,14 +717,17 @@
                         nBNewLieu=nBNewLieu+1;
                         var new_element = `
                               <div class="new-link-div form-group row row-cols-1 row-cols-sm-2 row-cols-md-5">
-                                              <div class="col-3"><select class="custom-select" name="listeTypeLieu" required>
-                                              <option selected></option>
-                                              {% for lieu in listeTypeLieux %}
-                                              <option value = "{{lieu}}">{{lieu}}</option>
-                                              {% endfor %}
-                                         </select></div>
+                                       <div class="col-3">
+                                             <select class="custom-select" name="listeTypeLieu" required>
+                                                  <option selected></option>
+                                                  {% for lieu in listeTypeLieux %}
+                                                  <option value = "{{lieu}}">{{lieu}}</option>
+                                                  {% endfor %}
+                                             </select></div>
                                           <div class="col-3"><input type="text" class="form-control" name="listeLieuDeclare" placeholder="ex : Duché de Parme"></div>
-                                          <div class="col-3 input-container-curiosity" id ="idContainerLieuNormaliser`+nBNewLieu+`"><input type="text" class="form-control lieu-normalise-class" id="idLieuNormaliser`+nBNewLieu+`" name="listeLieuNormal" placeholder="ex : Parme" onblur="myFunctionBlurFocus(value,id, `+nBNewLieu+`,)"></div>
+                                          <div class="col-3 input-container-curiosity" id ="idContainerLieuNormaliser`+nBNewLieu+`">
+                                            <input type="text" class="form-control lieu-normalise-class" id="idLieuNormaliser`+nBNewLieu+`" name="listeLieuNormal" placeholder="ex : Parme" onblur="myFunctionBlurFocus(value,id, `+nBNewLieu+`,)">
+                                          </div>
                                           <div class="col-2"><input type="date" class="form-control" id="listeDates" name="listeDates"></div>
 
                                          <div class="col-1">
@@ -723,18 +736,10 @@
                                              <button class="btn btn-outline-danger delete-current-line font-weight-bold btn-sm mt-2 mb-2 ml-1" type="button">-</button>
                                              </div>
                                          </div>
-                                      </div>
-                        `;
+                                      </div>`;
                         $("#containerLieuxDelares").append($(new_element));
 
-                        $(".lieu-normalise-class").autocomplete({
-                              source: function( request, response ) {
-                              var matcher = new RegExp( "^" + $.ui.autocomplete.escapeRegex( request.term ), "i" );
-                              response( $.grep( tagsLieux, function( item ){
-                                  return matcher.test( item );
-                              }) );
-                          }
-                        });
+                         autocompleMultiple(".lieu-normalise-class", tagsLieux);
                      });
 
                      $("#containerLieuxDelares").on("click", ".delete-current-line", function (event) {
@@ -749,24 +754,23 @@
                    removeValueWhenIncorrectPlace(tagsLieux, valeur, idHtml, "idContainerLieuNormaliser"+numbreLoop)
                }
 
+                // import fonction qui permet de desactiver le mode submit du formulaire lorsqu'on appuie sur Enter du clavier
                 removeEnterSubmit ("creationFormId")
 
                  //MODAL: FONCTIONS QUI PERMETENT DE CREER DES LIEUX DANS LA BASE DE DONNEES
 
                  // ma fonction pour afficher la carte leaflet sans erreurs
-                  displayMapInModal("myModalPlace");
+                 displayMapInModal("myModalPlace");
+   </script>
+        {% include "includes/map.html" %}
 
-                //generate map
-                var map = L.map('map', {center: [48.69096,  9.14062],zoom: 5});
+   <script>
+       <!-- SCRIPT POUR AFFICHER LE MODAL, APPELER GEONAMES, ENREGISTRER LES LIEUX DANS LA BASE -->
+            //generate map
+            var theMarker = {};
 
-                var theMarker = {};
-                L.tileLayer( 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                    subdomains: ['a','b','c']
-                    }).addTo( map );
-
-                 // implement autocomplete avec les lieux de Geonames
-                $('#nomLieu').autocomplete({
+            // implement autocomplete pour le modal avec les lieux de Geonames
+            $('#nomLieu').autocomplete({
 
                 // Appel http geonames avec la fonction ajax
                 source : function(requete, reponse){ // les deux arguments représentent les données nécessaires au plugin
@@ -805,9 +809,10 @@
                     $( '#pays' ).val( ui.item.pays);
                     $( '#region' ).val( ui.item.region);
                     $( '#idGeonames' ).val( ui.item.geonameId);
+
                     regenerateMap(ui.item.lat, ui.item.lng)
                 }
-                    });
+                });
 
            function updateMap() { // appliqué à l'événement onchange sur latitude et longitude
                var lat = document.getElementById("lat");
@@ -816,11 +821,11 @@
            }
 
            function regenerateMap (lat, long) {
-               map.setView([lat, long], 10); // setView: objet de Leaflet qui fixe la vue de la carte sur la lat et lonf
+               mymap.setView([lat, long], 10); // setView: objet de Leaflet qui fixe la vue de la carte sur la lat et lonf
                if (theMarker != undefined) { // si le marqueur est différent de null (car la première fois il n'existe pas)
-                   map.removeLayer(theMarker); //removeLayer:objet leaflet. supprime l'ancien marqueur de la carte
+                   mymap.removeLayer(theMarker); //removeLayer:objet leaflet. supprime l'ancien marqueur de la carte
                };
-               theMarker = L.marker([lat,long]).addTo(map); // L.marker: construot un nouveau marquer et l'ajoute à la carte
+               theMarker = L.marker([lat,long]).addTo(mymap); // L.marker: construot un nouveau marquer et l'ajoute à la carte
            }
 
            // vider le formulaire quand on ferme le modal
@@ -869,12 +874,13 @@
                                    }
                            });
                    })
+            // import de la fonction qui permet de griser le button submit des formulaires pour empêcher d'appuyer plusieurs fois sur creer-formulaire
+           shadeButtonSubmit ()
 
            </script>
 
-     {% endblock %}
-
-             <button type="submit" class="btn btn-primary">Créer régistre</button>
+    {% endblock %}
+             <button type="submit" class="btn btn-primary once-only">Créer registre</button>
         </form>
 
 {% endblock %}

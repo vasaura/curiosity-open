@@ -6,48 +6,12 @@
   </div>
      <div class="container">
 
-     <p class="lead">Il y a <strong>{{ personneAvecEnfant.total }}</strong> de personne(s) accompagnées par leur(s) enfant(s)</p>
+     <p class="lead">Il y a <strong>{{ personnes.total }}</strong> de personne(s) accompagnées par leur(s) enfant(s)</p>
         <ul class="list-group">
-        {% for pers in personneAvecEnfant.items %}
+        {% for pers in personnes.items %}
             <li class="list-group-item"><a href="{{ url_for('notice', identifier=pers[0]) }}">{{ pers[1] }}, {{ pers[2] }}</a></li>
         {% endfor %}
         </ul>
+          {% include "includes/pagination.html" %}
     </div>
-     <div class="container">
-            <div class="mt-4">
-                <nav aria-label="research-pagination">
-                    <ul class="pagination justify-content-center">
-                    {% if personneAvecEnfant.has_prev %}
-                     <li class="page-item">
-                         <a class="page-link" href="{{ url_for('persEnfant', page=personneAvecEnfant.prev_num) }}">Précédent</a> <!-- Le lien URL est du type http:...../index?page=2-->
-                     </li>
-                    {% endif %}
-                    {% for i in personneAvecEnfant.iter_pages(left_current=2, right_current=5) %} <!-- boucle sur toutes les pages potentielles des personnes-->
-                       {% if i %}
-                                {% if i != personneAvecEnfant.page %} <!-- Si chaque page est diférente de la page actuelle (récupérer par le parametre page de l'objet personnes)-->
-                               <li class="page-item">
-                                <a class="page-link" href="{{ url_for('persEnfant', page=i) }}">{{i}}</a> <!-- Le lien URL est du type http:...../index?page=2-->
-                              </li>
-                                {% else %}
-                              <li class="page-item active disabled">
-                                <a class="page-link">Page {{i}}</a>
-                              </li>
-                                {% endif %}
-                        {% else %}
-                             <li class="page-item disabled">
-                              <a class="page-link">...</a>
-                            </li>
-                        {% endif %}
-
-                    {% endfor %}
-                    {% if personneAvecEnfant.has_next %}
-                     <li class="page-item">
-                         <a class="page-link" href="{{ url_for('persEnfant', page=personneAvecEnfant.next_num) }}">Suivant</a> <!-- Le lien URL est du type http:...../index?page=2-->
-                     </li>
-                    {% endif %}
-                    </ul>
-               </nav>
-          </div>
-    </div>
-
 {% endblock %}

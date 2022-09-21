@@ -4,51 +4,43 @@
  <div class="container">
          <header class="page-header"><h1>Lieux d'enregistrement</h1></header>
 
-        <div id="mapid" style="height: 410px; width:60%"></div>
+        <div id="mapid" style="height: 610px; width:100%"></div>
 
-        <table id="curiosity" class="table" style="width:100%">
-            <thead>
-              <tr>
-                <th>Nom du lieu</th>
-                <th>Nombre de passage dans la ville</th>
-              </tr>
-            </thead>
-             <tbody>
-               {% for lieu in lieux %}
-                  <tr>
-                      <td>{{ lieu[1] }}</td>
-                      <td><a href="{{url_for("persParPass", id_villePassage = lieu[2]) }}">{{ lieu[0] }}</a></td>
-                  </tr>
-               {% endfor %}
-            </tbody>
-        </table>
     </div>
 
-
         {% block scripts %}
-            <script>
-            $(document).ready(function() {
-            $('#curiosity').DataTable( {
-                        "language": {
-                            "url": "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
-                        },
-                         "lengthMenu": [ 25, 50, 75, 100 ]
-                    } );
-            } );
 
+               {% include "includes/dataTable.html" %}
+               {% include "includes/map.html" %}
 
-                var mymap = L.map('mapid').setView([46.00, 2.00], 5);
-                L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-                    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-                    maxZoom: 18,
-                    id: 'mapbox/streets-v11',
-                    accessToken: 'pk.eyJ1IjoidmFzYXVyYSIsImEiOiJjazVod3drNTUwN3ZqM3BvNzcyNXQxNjg3In0.l_LUXbWkAMvNb3lttxpuEQ'
-                }).addTo(mymap);
+                <script>
+                    // initialisation du cluster
+                    var markerClusters = L.markerClusterGroup();
+                    // récupération de la liste de lieux dans une variable js pour traitement front. |toJson transforme la liste dans un objet manipulable en js.
+                    var lieux = {{ lieux|tojson }}
+                    //récupère l'url de base avec un faux paramètre
+                    var url= {{url_for("persParPass", id_villePassage = 1)|tojson }}
 
-                //Prend une liste depuis le serveur; boucle sur les toutes les villes de passage et ajouter un marqueur sur la carte
-                {% for lieu in lieux %}
-                    L.marker([{{lieu[3]}},{{lieu[4] }}]).bindPopup("{{ lieu[0]}} passages").addTo(mymap);
-                {% endfor %}
+                for (var i=0; i<lieux.length; ++i)
+                {
+                    //récupère un objet lieu avec nom, coordonnes, id, etc
+                    var lieu = lieux[i]
+                    //reconstitue l'url final avec le bon param qui remplace le faux
+                    var urlSplit = url.split("1")
+                    var urlFinal = urlSplit[0] +lieu[2]
+
+                    //le popup avec le nom de la ville, le nb de personne et le lien vers la liste des personnes
+                    var curiosityPopup = '<b class="curiosity-popup">Lieu :</b> '+ '<span class="curiosity-popup">'+ lieu[1] + '</span>'+
+                                      '<br/> <b class="curiosity-popup">Nombre de passages :</b> ' + '<a href="' + urlFinal + '" class="curiosity-popup" style="font-size:14px;">' + lieu[0] + '</a>'
+
+                    //ajoute les informations au cluster
+                    markerClusters.addLayer(L.marker( [lieu[3], lieu[4]], {icon: myIconBirth})
+                                  .bindPopup(curiosityPopup)
+                    );
+                }
+                    //met à jour la carte avec les clusters
+                mymap.addLayer( markerClusters );
+
                 </script>
 
         {% endblock %}
