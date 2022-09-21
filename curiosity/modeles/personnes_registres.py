@@ -1,4 +1,5 @@
 from curiosity import db
+from flask import url_for
 
 class Personne(db.Model):
     # les attributs des classes doivent avoir les mêmes noms que les champs de la base Mysql
@@ -21,12 +22,13 @@ class Personne(db.Model):
     lieux_deces = db.relationship("Lieu", foreign_keys = [id_lieuDeces])
     registresPers = db.relationship("DetailRegistre", back_populates = "personnes")
     voyageAvecPers = db.relationship("VoyageAvec", back_populates="personnes" )
+    authorshipPers = db.relationship("AuthorshipPersonne", back_populates="personnes")
 
     def __repr__(self):
         return '<Personne {}>'.format(self.nom)
 
     @staticmethod
-    def create_person(nom, prenom, sexe, anneeNaissance, observations, id_lieuxNaissance, dateDeces, id_lieuDeces,certitudeNP ):
+    def create_person(nom, prenom, sexe, anneeNaissance, observations, id_lieuxNaissance, dateDeces, id_lieuDeces,certitudeNP,authorshipPers):
         # on vérifie qu'au moins un des deux champs (nom, prénom) est rempli
         errors = []
         if not nom:
@@ -94,8 +96,11 @@ class Personne(db.Model):
             id_lieuxNaissance=id_lieuxNaissance,
             dateDeces=dateDeces,
             id_lieuDeces=id_lieuDeces,
-            certitudeNP=certitudeNP
+            certitudeNP=certitudeNP,
         )
+
+        for authorship in authorshipPers:
+            created_person.authorshipPers.append(authorship)
 
         try:
             # création de la nouvelle personne :
@@ -109,7 +114,7 @@ class Personne(db.Model):
             return False, [str(error_creation)]
 
     @staticmethod
-    def modify_person(id,nom, prenom, sexe, anneeNaissance, observations, id_lieuxNaissance, dateDeces, id_lieuDeces,certitudeNP ):
+    def modify_person(id,nom, prenom, sexe, anneeNaissance, observations, id_lieuxNaissance, dateDeces, id_lieuDeces, certitudeNP, authorshipPers):
         # on vérifie qu'au moins un des deux champs (nom, prénom) est rempli
         errors = []
         if not nom:
@@ -156,7 +161,6 @@ class Personne(db.Model):
         if certitudeNP == "":
             certitudeNP = None
 
-
         if dateDeces == '':
             dateDeces = None
 
@@ -184,6 +188,9 @@ class Personne(db.Model):
             personne.id_lieuDeces = id_lieuDeces
             personne.certitudeNP=certitudeNP
 
+            for authorship in authorshipPers:
+                personne.authorshipPers.append(authorship)
+
         try:
             # création de la nouvelle personne :
 
@@ -209,12 +216,53 @@ class Personne(db.Model):
         db.session.delete(personneUnique)
         db.session.commit()
 
+    def personne_json(self):
+        """
+        Fonction qui transforme les informations sur une personne en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        if self.lieux_naissance:
+            lieuNaissance = self.lieux_naissance.lieu_json()
+        else:
+            lieuNaissance = "non renseigné"
+
+        if self.lieux_deces:
+            lieuDeces = self.lieux_deces.lieu_json()
+        else:
+            lieuDeces = "non renseigné"
+
+        personneJson = {
+            "type": "personne",
+            "id": self.id,
+            "attributes" : {
+                "secondName": self.nom,
+                "firstName": self.prenom,
+                "sex": self.sexe,
+                "yearOfBirth": self.anneeNaissance,
+                "observations": self.observations,
+                "dateOfDeath": str(self.dateDeces),
+                "authorsOfPersonRecord": [author.authorPers_json() for author in self.authorshipPers],
+                "places": {
+                    "placeOfBirth": lieuNaissance,
+                    "placeOfDeath": lieuDeces
+                },
+            },
+
+           "register":  [registre.register_json() for registre in self.registresPers],
+            "links": {
+                "html": url_for("notice", identifier=self.id, _external=True),
+                "self": url_for("api_personne", identifier=self.id, _external=True)
+            },
+
+        }
+        return personneJson
+
 class Lieu (db.Model):
     __tablename__ = "lieux"
     id = db.Column(db.Integer, unique=True, nullable=False, primary_key=True, autoincrement=True)
     nomLieuFr = db.Column(db.String(64))
     nomLieuOrig = db.Column(db.String(64))
-    pays = db.Column(db.String(20))
+    pays = db.Column(db.String(64))
     region = db.Column(db.String(64))
     departement = db.Column(db.String(64))
     codeINSEE = db.Column(db.String(64))
@@ -369,6 +417,23 @@ class Lieu (db.Model):
         except Exception as error_modification:
             return False, [str(error_modification)]
 
+    def lieu_json(self):
+        """
+        Fonction qui transforme les informations sur un lieu en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        lieuJson = {
+            "frenchName": self.nomLieuFr,
+            "originalName":self.nomLieuOrig,
+            "region": self.region,
+            "departement": self.departement,
+            "codeINSEE":self.codeINSEE,
+            "idGeonames": self.id_geonames,
+            "latitude":self.lat,
+            "longitude": self.lng
+        }
+        return lieuJson
+
 class Categorie (db.Model):
     __tablename__ = "categories"
     id = db.Column(db.Integer, unique=True, nullable=False, primary_key=True, autoincrement=True)
@@ -381,6 +446,16 @@ class Categorie (db.Model):
 
     def __repr__(self):
         return '<Catégorie professionnelle: {}>'.format(self.labelCategorie)
+
+    def categorie_json(self):
+        """
+        Fonction qui transforme les informations sur une catégorie en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        categorieJson = {
+            "categorieLabel": self.labelCategorie,
+        }
+        return categorieJson
 
 class Souscategorie (db.Model):
     __tablename__ = "souscategories"
@@ -395,9 +470,18 @@ class Souscategorie (db.Model):
     categories = db.relationship("Categorie", back_populates = "souscategories")
     liensRegistre = db.relationship("LienRegistresCategories", back_populates="souscategories")
 
-
     def __repr__(self):
         return '<Souscategorie {}>'.format(self.labelSouscategorie)
+
+    def souscategorie_json(self):
+        """
+        Fonction qui transforme les informations sur uyne souscategorie en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        soucategorieJson = {
+            "subcategorieLabel": self.labelSouscategorie,
+        }
+        return soucategorieJson
 
 class DetailRegistre (db.Model):
     __tablename__ = 'detailsRegistre'
@@ -425,6 +509,7 @@ class DetailRegistre (db.Model):
     nrOrdre = db.Column(db.String(10))
     photoArchive = db.Column(db.String(64))
     commentaires = db.Column(db.Text)
+    collecte = db.Column(db.String(128))
 
     #FK
     id_personne = db.Column(db.Integer, db.ForeignKey("personnes.id"), nullable=False)
@@ -435,6 +520,9 @@ class DetailRegistre (db.Model):
     liensCategories = db.relationship("LienRegistresCategories", back_populates = "registres")
     caracteristiques = db.relationship("CaracteristiquePhysique", back_populates = "registres")
     voyageAvecRegistre = db.relationship("VoyageAvec", back_populates="registres" )
+    authorshipRegistres = db.relationship("AuthorshipRegistre", back_populates="registres")
+    photos = db.relationship("Photo", back_populates="registres")
+
 
     def __repr__(self):
         return '<DetailRegistre {}>'.format(self.id)\
@@ -443,9 +531,9 @@ class DetailRegistre (db.Model):
     @staticmethod
     def create_register(id_personne, nomOrigine, prenomOrigine, agePersonne,anneeNaissCalcule,
                         taillePersonne, professionOrigine, dureeSejour, description, accompagnePar, caracteristiquesPhysiques,
-                        autresCaracteristiques, epoux, nbEnfants, nbAutreMembre, nbPersSupplement,pseudonyme,
-                        nomArchive, cote, natureDoc, nrOrdre, photoArchive,commentaires,
-                        lieuxDeclares, liensCategories,caracteristiques,voyageAvecRegistre):
+                        autresCaracteristiques, epoux, nbEnfants, nbAutreMembre, nbPersSupplement, pseudonyme,
+                        nomArchive, cote, natureDoc, nrOrdre, collecte, commentaires,
+                        lieuxDeclares, liensCategories,caracteristiques,voyageAvecRegistre,authorshipRegistres, photos):
 
 
         errors = []
@@ -495,14 +583,14 @@ class DetailRegistre (db.Model):
         if natureDoc =='':
             natureDoc =None
 
-        if photoArchive =='':
-            photoArchive = None
-
         if nrOrdre == '' :
             nrOrdre= None
 
         if commentaires =='':
             commentaires =None
+
+        if collecte == '':
+            collecte = None
 
 
         # Si on a au moins une erreur
@@ -532,8 +620,8 @@ class DetailRegistre (db.Model):
             commentaires=commentaires,
             nomArchive=nomArchive,
             cote=cote,
-            photoArchive=photoArchive,
-            nrOrdre=nrOrdre
+            nrOrdre=nrOrdre,
+            collecte=collecte
         )
         # on modifie l'objet en rajoutant les attributs de type liste d'objets lieux
         for lieu in lieuxDeclares:
@@ -547,6 +635,12 @@ class DetailRegistre (db.Model):
 
         for personne in voyageAvecRegistre:
             objectRegister.voyageAvecRegistre.append(personne)
+
+        for authorship in authorshipRegistres:
+            objectRegister.authorshipRegistres.append(authorship)
+
+        for photo in photos:
+            objectRegister.photos.append(photo)
 
         try:
             # création de l'objet en base de données :
@@ -564,7 +658,7 @@ class DetailRegistre (db.Model):
                         taillePersonne, professionOrigine, dureeSejour, description, accompagnePar,
                         caracteristiquesPhysiques, autresCaracteristiques, epoux, nbEnfants,
                         nbAutreMembre, nbPersSupplement, pseudonyme,nomArchive, cote, natureDoc,
-                        nrOrdre, photoArchive, commentaires,lieuxDeclares,voyageAvecRegistre,caracteristiques,liensCategories):
+                        nrOrdre, collecte, photos, commentaires,lieuxDeclares,voyageAvecRegistre,caracteristiques,liensCategories, authorshipRegistres):
         errors =[]
         if indexOrigine=='':
             indexOrigine =None
@@ -620,14 +714,14 @@ class DetailRegistre (db.Model):
         if natureDoc =='':
             natureDoc =None
 
-        if photoArchive =='':
-            photoArchive = None
-
         if nrOrdre == '' :
             nrOrdre= None
 
         if commentaires =='':
             commentaires =None
+
+        if collecte == '':
+            collecte=None
 
         if epoux:
             epoux=int(epoux)
@@ -672,9 +766,9 @@ class DetailRegistre (db.Model):
             registre.cote=cote
             registre.natureDoc=natureDoc
             registre.nrOrdre=nrOrdre
-            registre.photoArchive=photoArchive
             registre.commentaires=commentaires
             registre.id_personne=id_personne
+            registre.collecte = collecte
 
 
             # supprime les lieux
@@ -693,7 +787,7 @@ class DetailRegistre (db.Model):
             for pers in voyageAvecRegistre:
                 registre.voyageAvecRegistre.append(pers) #on rajoute un objet VoyageAvec à la liste d'objet
 
-            #suppression de la liste d'objet cafracteristiques
+            #suppression de la liste d'objet caracteristiques
             for caracteristique in registre.caracteristiques:
                 db.session.delete(caracteristique)
 
@@ -701,11 +795,25 @@ class DetailRegistre (db.Model):
             for element in caracteristiques:
                 registre.caracteristiques.append(element)  # on rajoute un objet à la liste d'objet
 
+            # suprimme les categories
             for categorie in registre.liensCategories:
                 db.session.delete(categorie)
 
+            # recrée la liste d'objets Categorie
             for newCat in liensCategories:
                 registre.liensCategories.append(newCat)
+
+            # supprime les objets photos
+            for photo in registre.photos:
+                db.session.delete(photo)
+
+            # recrée la liste d'objets photos depuis le formulaire
+            for newphoto in photos:
+                registre.photos.append(newphoto)
+
+            # ajoute au authorshipRegistres la nouvelle modification avec role=contributeur sans supprimer les anciens authorship
+            for authorship in authorshipRegistres:
+                registre.authorshipRegistres.append(authorship)
 
         try:
             # db.session.add() génère des erreurs. Ne pas l'utiliser. ajout dans la base de données de l'objet registre modifier avec les nouveux attributs
@@ -733,6 +841,45 @@ class DetailRegistre (db.Model):
         db.session.delete(registre)
         db.session.commit()
 
+    def register_json(self):
+        """
+        Fonction qui transforme les informations sur un registre en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        registreJson = {
+            "registerId": self.id,
+            "declaredSecondName": self.nomOrigine,
+            "declaredFirstName": self.prenomOrigine,
+            "age": self.agePersonne,
+            "calculatedYearOfBirth": self.anneeNaissCalcule,
+            "size": str(self.taillePersonne),
+            "declaredProfession": self.professionOrigine,
+            "durationOfStay": self.dureeSejour,
+            "description": self.description,
+            "declareToBeAccompaniedBy":self.accompagnePar,
+            "reportedPhysicalCharacteristics": self.caracteristiquesPhysiques,
+            "otherCharacteristics": self.autresCaracteristiques,
+            "maried": self.epoux,
+            "numberOfChildren" : self.nbEnfants,
+            "numberOfOtherFamillyMembers" : self.nbAutreMembre,
+            "numberOfOtherPeople":self.nbPersSupplement,
+            "nickname" : self.pseudonyme,
+            "archivalCenter": self.nomArchive,
+            "archivalRecord" : self.cote,
+            "typeDfDocument" : self.natureDoc,
+            "orderNumber" : self.nrOrdre,
+            "comments" : self.commentaires,
+            "collectingDocuments" : self.collecte,
+            "declaredPlaces" :  [lieuDeclare.lieuDeclarer_json() for lieuDeclare in self.lieuxDeclares],
+            "physicalCharacteristics" : [caracteristiques.caracteristiquesPhys_json() for caracteristiques in self.caracteristiques],
+            "photos" : [photo.photo_json() for photo in self.photos],
+            "travelWith" : [compagnon.voyageAvec_json() for compagnon in self.voyageAvecRegistre],
+            "categoriesAndSubcategoriesOfProfessions" : [liencatsoucat.lienRegistreCat_json() for liencatsoucat in self.liensCategories],
+            "authorsOfRegisterRecord" : [author.authorRegister_json() for author in self.authorshipRegistres]
+
+        }
+        return registreJson
+
 class LieuDeclare (db.Model):
     # classe correspondant à la table de lien entre le detail registre et la table lieux
     __tablename__ = 'lieuxDeclares'
@@ -758,6 +905,25 @@ class LieuDeclare (db.Model):
         db.session.delete(lieuDeclare)
         db.session.commit()
 
+
+    def lieuDeclarer_json(self):
+        """
+        Fonction qui transforme les informations sur un lieu déclaré en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        if self.lieux:
+            lieuNormalise = self.lieux.lieu_json()
+        else:
+            lieuNormalise = "non renseigné"
+
+        lieuDeclarerJson = {
+            "declaredPlace": self.labelLieuDeclare,
+            "date": str(self.date),
+            "typeOfPlace": self.typeLieu,
+            "normalisedPlace": lieuNormalise
+        }
+        return lieuDeclarerJson
+
 class LienRegistresCategories (db.Model):
     # classe correspondant à la table de lien entre le detail registre et les tables categories et sous-categories
     __tablename__ = 'lienRegistresCategories'
@@ -781,6 +947,23 @@ class LienRegistresCategories (db.Model):
         db.session.delete(lienCategorie)
         db.session.commit()
 
+    def lienRegistreCat_json(self):
+        """
+        Fonction qui transforme les informations sur lienregistrecategorie en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        if self.categories and self.souscategories:
+            lienRegistreCatJson = {"categorie":self.categories.categorie_json(),
+                                   "subcategorie": self.souscategories.souscategorie_json()
+                                   }
+        elif self.categories:
+            lienRegistreCatJson =  {"categorie":self.categories.categorie_json()}
+
+        else:
+            lienRegistreCatJson = "non renseigné"
+
+        return lienRegistreCatJson
+
 class CaracteristiquePhysique (db.Model):
     # classe correspondant à la table des carracteristiques physiques
     __tablename__ = 'caracteristiquesPhysiques'
@@ -800,6 +983,16 @@ class CaracteristiquePhysique (db.Model):
         caracteristique = CaracteristiquePhysique.query.get(id_caracteristique)
         db.session.delete(caracteristique)
         db.session.commit()
+
+    def caracteristiquesPhys_json(self):
+        """
+        Fonction qui transforme les informations sur caractéristique physique en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        caracteristiquesPhysJson = {
+            "physicalCharacteristics": self.labelCaracteristique
+        }
+        return caracteristiquesPhysJson
 
 class VoyageAvec (db.Model):
     #classe correspondant à la table voyageAvec
@@ -821,3 +1014,47 @@ class VoyageAvec (db.Model):
         voyageAvec = VoyageAvec.query.get(id_voyageAvec)
         db.session.delete(voyageAvec)
         db.session.commit()
+
+    def voyageAvec_json(self):
+        """
+        Fonction qui transforme les informations sur voyage avec en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        if self.personnes and self.registres:
+            personneAccompagnante = self.personnes.personne_json()
+        else:
+            personneAccompagnante = "non renseigné"
+
+        return personneAccompagnante
+
+class Photo (db.Model):
+     #classe correspondant à la table photos
+     __tablename__ = 'photos'
+     id = db.Column(db.Integer, unique=True, nullable=False, primary_key=True, autoincrement=True)
+
+     # FK
+     id_registre = db.Column(db.Integer, db.ForeignKey("detailsRegistre.id"), nullable=False)
+     label_photo = db.Column(db.String(64))
+
+     # ---- DB.RELATIONSHIP -----#
+     registres = db.relationship("DetailRegistre", back_populates="photos")
+
+     def __repr__(self):
+         return '<Photo {}>'.format(self.id)
+
+     @staticmethod
+     def delete_photos(id_photo):
+         photo = Photo.query.get(id_photo)
+         db.session.delete(photo)
+         db.session.commit()
+
+     def photo_json(self):
+        """
+        Fonction qui transforme les informations sur une photo en un dictionnaire pour un export en json via l'API
+        :return: dict
+        """
+        photoJson = {
+            "photoLabel": self.label_photo
+        }
+        return photoJson
+

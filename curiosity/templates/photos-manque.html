@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+            <div class="col-6"> <header class="page-header"><h1>Photos manquantes</h1></header></div>
+
+         <table id="curiosity" class="table" style="width:70%">
+            <thead>
+              <tr>
+                <th>Photo manquante</th>
+                   <th>Id registre</th>
+              </tr>
+            </thead>
+             <tbody>
+               {% if differenceBDD_Folder %}
+               {% for photo in differenceBDD_Folder %}
+                  <tr>
+                      <td> {{ photo[0] }}</td>
+                      <td> <a href="{{ url_for('registre', identifier_registre=photo[1]) }}">{{ photo[1] }}</a></td>
+                  </tr>
+               {% endfor %}
+              {% endif %}
+            </tbody>
+        </table>
+     <script>
+{% block scripts %}
+  {% include "includes/dataTable.html" %}
+{% endblock %}
+     </script>
+
+
+    </div>
+
+{% endblock %}

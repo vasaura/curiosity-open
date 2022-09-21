@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container">
+         <header class="page-header"><h1>Métier déclaré : {{label}}</h1></header>
+  </div>
+
+     <div class="container">
+     <p class="lead">Il y a <strong>{{ personnes.total }}</strong> des personne(s) qui ont déclaré ce métier</p>
+        <ul class="list-group">
+        {% for pers in personnes.items %}
+            <li class="list-group-item"><a href="{{ url_for('notice', identifier=pers[0]) }}">{{ pers[1] }}, {{ pers[2] }}</a></li>
+        {% endfor %}
+        </ul>
+          {% include "includes/pagination.html" %}
+    </div>
+
+{% endblock %}

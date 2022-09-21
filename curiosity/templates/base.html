@@ -8,9 +8,9 @@
         <meta charset="UTF-8">
         <link rel="icon" type="image/png" href="../static/images/joueurOrgue.png" />
             {% if title %}
-            <title>{{ title }} - Spectacle de curiosités</title>
+            <title>{{ title }} - Spectacles de curiosités</title>
             {% else %}
-            <title>Welcome to Spectacle de curiosités</title>
+            <title>Welcome to Spectacles de curiosités</title>
             {% endif %}
             {% include "partials/css.html" %}
             {% include "partials/metadata.html" %}
@@ -20,17 +20,15 @@
 <div class="container-fluid pt-3">
     <nav class="navbar navbar-expand navbar-light justify-content-between" style="background-color: #e6e6e6;">
         <img src="../static/images/joueurOrgue.png" class=img-responsive alt="dessin joueur d'orgue" width="45" height="70" align="left"/>
-        <a class="navbar-brand" href="{{ url_for('intro') }}">Spectacle de curiosités</a>
+        <a class="navbar-brand" href="{{ url_for('intro') }}">Spectacles de curiosités</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNavDropdown">
             <ul class="navbar-nav mr-auto">
-                 <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('projet')}}">Projet</a>
-              </li>
+
               <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('index')}}">Liste de personnes</a>
+                <a class="nav-link" href="{{ url_for('index')}}">Personnes</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('catProfession')}}">Catégories professionnelles</a>
@@ -42,6 +40,16 @@
                     <a class="dropdown-item" href="{{ url_for('naissance')}}">Lieu de naissance</a>
                 </div>
               </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('archives')}}">Archives</a>
+              </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('cotes')}}">Cotes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('graphique')}}">Graphiques</a>
+                </li>
             </ul>
             <ul class="navbar-nav right">
              <li class="nav-item">
@@ -57,8 +65,8 @@
                  </li>
             <li>
               <form class="form-inline" action="{{url_for("recherche")}}" method="GET">
-                <input class="form-control" name="keyword" type="search" placeholder="Rechercher" aria-label="Recherche">
-                <button class="btn btn-secondary" type="submit"><i class="fa fa-search"></i></button>
+                <input class="form-control mr-sm-2" name="keyword" type="search" placeholder="rechercher...">
+                <button class="btn btn-secondary my-2 my-sm-0" type="submit"><i class="fa fa-search"></i></button>
               </form>
              </li>
 
@@ -68,12 +76,19 @@
     {% if current_user.is_authenticated %}
         <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
           <ul class="navbar-nav">
-            <li class="nav-item active">
+            <li class="nav-item">
               <a class="nav-link" href="{{ url_for('creer_personne') }}">Créer une nouvelle personne</a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('creer_lieu') }}">Créer un nouveau lieu</a>
             </li>
+               <li class="nav-item active">
+                <a class="nav-link" href="{{ url_for('glossaire')}}">Métiers déclarés</a>
+              </li>
+              <li class="nav-item active">
+                <a class="nav-link" href="{{ url_for('displayPhotos')}}">Photos manquantes</a>
+              </li>
+
           </ul>
         </nav>
     {% endif %}
@@ -94,14 +109,16 @@
        {% endwith %}
 </div>
 
-     {% block content%} {% endblock %}
+    <div class="container-fluid pb-3" >{% block content%} {% endblock %}</div>
+
 
 <div class="container-fluid pb-3">
      <div class="mt-4">
          <footer class="footer" style="background-color: #a1b7ce;">
                 <div class="row justify-content-md-center">
-                        <div class="col col-2"><a href="https://github.com/vasaura/curiosity-open" class="text-secondary" target="_blank">  <i class="fab fa-github"></i> Github</a></div>
-                        <div class="col col-2"><a href="{{ url_for("credits") }}" class="text-secondary">Crédits</a></div>
+                     <div class="col col-2"><a class="text-secondary"  href="{{ url_for('projet')}}">Projet</a></div>
+                     <div class="col col-2"><a href="https://github.com/vasaura/curiosity-open" class="text-secondary" target="_blank">  <i class="fab fa-github"></i> Github</a></div>
+                     <div class="col col-2"><a href="{{ url_for("credits") }}" class="text-secondary">Crédits</a></div>
                 </div>
          </footer>
         <footer class="footer" style="background-color: #e6e6e6;">

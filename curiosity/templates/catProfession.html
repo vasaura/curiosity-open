@@ -1,48 +1,62 @@
 {% extends "base.html" %} {% block content %}
-<script src="{{ url_for('static', filename='js/curiosity.js') }}"></script>
+
 <div class="container">
   <header class="page-header">
     <h1>Catégories professionnelles</h1>
   </header>
 
-
   <div class="list-group list-group-root card">
-        {% for catprof in nombrePersParCat %}
-
-        {% if catprof[1].souscategories %}
-        <li href="#item{{catprof[1].id}}" class="list-group-item" data-toggle="collapse">
-          <i class="change fas fa-plus-square mr-2 "></i>{{catprof[1].labelCategorie}}
-            <a href="{{url_for('persCat', identifier=catprof[1].id)}}"><span class="badge badge-pill badge-curiosity-info">{{catprof[0]}}</span></a>
+    {% for key, value in totalCategoriesSousCatmetier.items() %}
+        <li href="#item{{value['idCat']}}" class="list-group-item" data-toggle="collapse">
+          <i class="change fas fa-plus-square mr-2" ></i>{{key}}
+            <a href="{{url_for('persCat', identifier=value['idCat'])}}"><span class="badge badge-pill badge-curiosity-info">{{value['nbPersCat']}}</span></a>
         </li>
-            <div class="list-group collapse" id="item{{catprof[1].id}}">
-                  {% for souscat in catprof[1].souscategories %}
-                      <li href="#item-souscat-{{souscat.id}}" class="list-group-item mr-5" data-toggle="collapse">
-                          <i class="fas fa-drum"></i>{{souscat.labelSouscategorie}}
-                          {% for eachSousCat in nombrePersParSousCat %}
-                              {% if eachSousCat[1].id == souscat.id %}
-                                  <a href="{{url_for('persSousCat', identifier=eachSousCat[1].id)}}"><span class="badge badge-pill badge-curiosity-info">{{ eachSousCat[0]}}</span></a>
-                              {% endif %}
-                          {% endfor %}
-                      </li>
-                   {% endfor %}
-            </div>
+         <div class="list-group collapse" id="item{{value['idCat']}}">
+         {% if 'souscategories' in value %}
+             {% for keysouscat, valsouscat in value['souscategories'].items()  %}
+             <li href="#item-souscat{{valsouscat['idSouscat']}}" class="list-group-item mr-5" data-toggle="collapse">
+              <i class="change fas fa-plus-square mr-2"></i>{{keysouscat}}
+              <a href="{{url_for('persSousCat', identifier=valsouscat['idSouscat'])}}"><span class="badge badge-pill badge-curiosity-info">{{ valsouscat['nbPersSouscat']}}</span></a>
+              <div class="list-group collapse" id="item-souscat{{valsouscat['idSouscat']}}">
+                  <p class="font-weight-bold mt-3">Variation de métiers déclarés associés à la souscatégorie:</p>
+                    {% if 'metiers' in valsouscat %}
+                         <ul>
+                         {% for keymetier, valuemetier in valsouscat['metiers'].items() %}
+                         <li class="font-italic">{{ keymetier}}<a href="{{ url_for("persParMetiersDeclare", label=keymetier) }}"> {{ valuemetier }}</a></li>
+                         {% endfor %}
+                         </ul>
+                    {% endif %}
+              </div>
 
-        {% else%}
-            <li class="list-group-item">
-          <i class="far fa-minus-square mr-2"></i>{{catprof[1].labelCategorie}}
-            <a href="{{url_for('persCat', identifier=catprof[1].id)}}"><span class="badge badge-pill badge-curiosity-info">{{catprof[0]}}</span></a>
-        </li>
-        {% endif %}
-        {% endfor %}
+             </li>
+             {% endfor %}
+         {% endif %}
+
+         {% if 'metiers' in value %}
+              <p class="font-weight-bold mt-3 ml-3">Variation de métiers déclarés associés à la catégorie:</p>
+
+                     <ul>
+                     {% for keymetier, valuemetier in value['metiers'].items() %}
+                     <li class="font-italic">{{ keymetier}}<a href="{{ url_for("persParMetiersDeclare", label=keymetier) }}"> {{ valuemetier }}</a></li>
+                     {% endfor %}
+                     </ul>
+
+         {% endif %}
+         </div>
+    {% endfor %}
+
+
   </div>
-        <script>
-                $(function() {
-              $('.list-group-item').on('click', function() {
-                $('.change', this)
-                  .toggleClass('fa-plus-square')
-                  .toggleClass('fa-minus-square');
-              });
-            });
-        </script>
 </div>
+
+
+    <script>
+        $(function() {
+        $('.list-group-item').on('click', function() {
+    $('.change', this)
+      .toggleClass('fa-plus-square')
+      .toggleClass('fa-minus-square');
+  });
+            });
+    </script>
  {% endblock %}

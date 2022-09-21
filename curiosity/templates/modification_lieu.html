@@ -2,7 +2,7 @@
 
 
 {% block content %}
-<form class="container" method="POST" id="modificationPlaceFormId" action="{{url_for("modifier_lieu", id_lieu= lieu_origine.id)}}">
+<form class="container form-once-only" method="POST" id="modificationPlaceFormId" action="{{url_for("modifier_lieu", id_lieu= lieu_origine.id)}}">
       <div class="row">
           <div class="col-12"> <header class="page-header"><h2>Page de modification du lieu suivant <small class="text-muted">{{ lieu_origine.nomLieuFr }}</small></h2></header></div>
       </div>
@@ -12,15 +12,15 @@
       </div>
      <div class="form-group">
         <label for="pays">Pays</label>
-        <input type="text" class="form-control" id="pays" name="pays" maxlength="20" value="{{ lieu_origine.pays }}">
+        <input type="text" class="form-control" id="pays" name="pays" maxlength="64" value="{{ lieu_origine.pays }}">
       </div>
     <div class="form-group">
         <label for="region">Région</label>
-        <input type="text" class="form-control" id="region" name="region" maxlength="20" value="{{ lieu_origine.region or ''}}">
+        <input type="text" class="form-control" id="region" name="region" maxlength="64" value="{{ lieu_origine.region or ''}}">
       </div>
     <div class="form-group">
         <label for="depart">Département</label>
-        <input type="text" class="form-control" id="depart" name="depart" maxlength="20" value="{{ lieu_origine.departement or ''}}">
+        <input type="text" class="form-control" id="depart" name="depart" maxlength="64" value="{{ lieu_origine.departement or ''}}">
       </div>
       <div class="form-group">
         <label for="lat">Latitude</label>
@@ -40,20 +40,16 @@
         <input type="text" class="form-control" id="idGeonames" name="idGeonames" maxlength="64" value="{{ lieu_origine.id_geonames or ''}}">
       </div>
 
-      <div id="map" style="height: 400px; width: 700px;"></div>
+      <div id="mapid" style="height: 400px; width: 700px;"></div>
 
         <button type="submit" class="btn btn-primary mt-3">Modifier</button>
 </form>
 
 
   {% block scripts %}
+       {% include "includes/map.html" %}
   <script>
-    var map = L.map('map', {center: [48.69096,  9.14062],zoom: 4});
     var theMarker = {};
-    L.tileLayer( 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        subdomains: ['a','b','c']
-        }).addTo( map );
 
     $('#nomLieu').autocomplete({
 
@@ -108,6 +104,7 @@
        theMarker = L.marker([lat,long]).addTo(map);
    }
      removeEnterSubmit ("modificationPlaceFormId")
+  shadeButtonSubmit ()
   </script>
   {% endblock %}
 {% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %} {% block content %}
+<script src="{{ url_for('static', filename='js/curiosity.js') }}"></script>
+    <div class="container">
+    <header class="page-header">
+        <h2>Catégories et sous-catégories</h2>
+    </header>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+            </div>
+            <div class="col-10" id="chartdiv" style="width: 900px; height: 600px;">
+            </div>
+            <div class="col">
+
+            </div>
+        </div>
+
+
+
+
+
+    <script>
+        $(function() {
+            $('.list-group-item').on('click', function() {
+                $('.change', this)
+                    .toggleClass('fa-plus-square')
+                    .toggleClass('fa-minus-square');
+            });
+        });
+
+        // Create chart instance
+        var chart = am4core.create("chartdiv", am4charts.TreeMap);
+        chart.maxLevels = 1;
+
+        /* Set color step */
+        chart.colors.step = 1;
+        // Create pie series
+        var series = chart.series.push(new am4charts.PieSeries());
+
+        // Add data
+        chart.data = {{ totalData|safe }};
+
+        chart.dataFields.value = "value";
+        chart.dataFields.name = "name";
+        chart.dataFields.children = "children";
+
+        var level1 = chart.seriesTemplates.create("0");
+        var level1_bullet = level1.bullets.push(new am4charts.LabelBullet());
+        level1_bullet.locationY = 0.5;
+        level1_bullet.locationX = 0.5;
+        level1_bullet.label.text = "{name}";
+        level1_bullet.label.fill = am4core.color("#fff");
+
+        var level2 = chart.seriesTemplates.create("1");
+        var level2_bullet = level2.bullets.push(new am4charts.LabelBullet());
+        level2_bullet.locationY = 0.5;
+        level2_bullet.locationX = 0.5;
+        level2_bullet.label.text = "{name}";
+        level2_bullet.label.fill = am4core.color("#fff");
+
+
+        // And, for a good measure, let's add a legend
+        chart.legend = new am4charts.Legend();
+        chart.legend.useDefaultMarker = true;
+
+    </script>
+</div>
+{% endblock %}

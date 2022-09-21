@@ -1,0 +1,12 @@
+{% extends "base.html" %} {% block content %}
+    <div class="container">
+        <header class="page-header">
+            <h1>Liste de cotes</h1>
+        </header>
+        <div class="list-group">
+            {% for eachCote in cotes %}
+                <li><a href="{{ url_for('registreParCote', cote_archive=eachCote[0]) }}">{{ eachCote[0] }}</a></li>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
