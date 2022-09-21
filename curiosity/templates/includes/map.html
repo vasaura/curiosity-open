@@ -1,0 +1,32 @@
+<script>
+                var mymap = L.map('mapid', {center: [47.50, 1.57],zoom:5.7});
+                L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                   {attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                    maxZoom: 20,
+                    id: 'mapbox/streets-v11',
+                    accessToken: 'pk.eyJ1IjoidmFzYXVyYSIsImEiOiJjazVod3drNTUwN3ZqM3BvNzcyNXQxNjg3In0.l_LUXbWkAMvNb3lttxpuEQ'
+                }).addTo(mymap);
+
+                const myCustomColour = '#981326';
+
+            const markerHtmlStyles = `
+              background-color: ${myCustomColour};
+              width: 1.6rem;
+              height: 1.6rem;
+              display: block;
+              left: -1.5rem;
+              top: -1.5rem;
+              position: relative;
+              border-radius: 3rem 3rem 0;
+              transform: rotate(45deg);
+              border: 1px solid #FFFFFF`;
+
+            const myIconBirth = L.divIcon({
+              className: "my-custom-pin",
+              iconAnchor: [0, 20],
+              labelAnchor: [-6, 0],
+              popupAnchor: [0, -36],
+              html: `<span style="${markerHtmlStyles}" />`
+            });
+
+</script>

@@ -1,135 +1,36 @@
-from flask import render_template, flash, redirect, url_for, request, session, jsonify
+from flask import render_template, flash, redirect, url_for, request, session, stream_with_context
 from curiosity import appli, db
 from curiosity.forms import LoginForm, RegistrationForm
+from .constantes import PERSONNES_PAR_PAGES, LIEUX_PAR_PAGES, RESULT_PER_PAGE
 from flask_login import current_user, login_user, logout_user, login_required
-from curiosity.modeles.users import User
-from curiosity.modeles.personnes_registres import Personne, Lieu, Categorie, Souscategorie, DetailRegistre, LieuDeclare, LienRegistresCategories, CaracteristiquePhysique, VoyageAvec
+from curiosity.modeles.users import User, AuthorshipPersonne, AuthorshipRegistre
+from curiosity.modeles.personnes_registres import Personne, Lieu, Categorie, \
+    Souscategorie, DetailRegistre, LieuDeclare, \
+    LienRegistresCategories, CaracteristiquePhysique, VoyageAvec, Photo
 from werkzeug.urls import url_parse
-from sqlalchemy import func
+from werkzeug.wrappers import Response
+from sqlalchemy import func, extract
+from sqlalchemy.orm import aliased
+from .externalMethods.externalMethods import validate, extractLieuxComplet, \
+    sortByDateEnregistrement, sortByDestination, sortByMetiers, \
+    sortByPhysique, filterLieuxDeclareAvecUneNaissance, generateObjectCategorie, \
+    genrateObjetLieuxDeclare, generateCompleteCSV,generateReducedCsv,\
+    extractLieuxEnregistrementComplet
+# librairie pour se déplacer dans les répertoires
+import os
 
-PERSONNES_PAR_PAGES = 20
-METIER_PAR_PAGE = 20
-LIEUX_PAR_PAGES = 20
-
-
-def json_response(statusCode, codeRetour, message, nomLieuComplet):
-    response = jsonify({"codeRetour":codeRetour,
-                        "message":message,
-                        "nouveauLieuComplet": nomLieuComplet})
-    response.status_code = statusCode
-    return response
-
-def extractLieuxComplet():
-    lieux = Lieu.query.all()
-    listeNomLieu = []
-    for lieu in lieux:
-        nomLieuComplet = ""
-        if lieu.nomLieuFr:
-            nomLieuComplet = nomLieuComplet + lieu.nomLieuFr
-        if lieu.departement:
-            nomLieuComplet = nomLieuComplet + ", " + lieu.departement
-        if lieu.pays:
-            nomLieuComplet = nomLieuComplet + ", " + lieu.pays
-        if lieu.id:
-            nomLieuComplet = nomLieuComplet + ", " + str(lieu.id)
-        listeNomLieu.append(nomLieuComplet)
-    return listeNomLieu
-
-def sortByDestination(lieu):
-    """
-    fonction qui permet de donner un ordre aux type de lieux de la base selon un critère choisi
-    :param lieu: objet lieuDeclare
-    :return: int
-    """
-    if lieu.typeLieu == "Naissance":
-        return 0
-    elif lieu.typeLieu == "Domicile":
-        return 1
-    elif lieu.typeLieu == "Délivrance du passeport":
-        return 2
-    elif lieu.typeLieu == "Dernier Passage":
-        return 3
-    elif lieu.typeLieu == "Destination":
-        return 4
-    else:
-        return 5
-
-def sortByMetiers(tuple):
-    """
-    fonction qui permet de donner un ordre catégories de métiers de la base selon un critère choisi
-    :param metier: str correspondant au labelCategorie
-    :return: int
-    """
-    if tuple[1].labelCategorie == "autres metiers":
-        return 18
-    elif tuple[1].labelCategorie == "indéterminé":
-        return 17
-    elif tuple[1].labelCategorie == "domestique":
-        return 16
-    else:
-        return 1
-
-def filterLieuxDeclareAvecUneNaissance(listeDetailsRegistres):
-    findNaissance = False
-    listeLieu = []
-    for registre in listeDetailsRegistres:
-        for lieux in registre.lieuxDeclares:
-            if lieux.typeLieu == "Naissance":
-                if findNaissance == False:
-                    findNaissance = True
-                    listeLieu.append(lieux)
-            else:
-                listeLieu.append(lieux)
-    return listeLieu
-
-def genrateObjetLieuxDeclare(labelLieuNormaliseHtml, listeDate, listeLabelLieuDeclare, listeObjet_lieuDeclare,listeTypeLieu):
-    # définit la taille de listeLabelLieuDeclare qui est la même que celle des autres listes
-    tailleListelieuDeclare = len(listeLabelLieuDeclare)
-    # création d'un objet LieuDeclare pour chaque lieu déclaré
-    for i in range(0, tailleListelieuDeclare):
-        objetLieuxDeclares = LieuDeclare(
-            labelLieuDeclare=listeLabelLieuDeclare[i],
-            # récupère le dernier élément de la la liste qui est l'id du lieu et ajoute None pour les lieux non saisis
-            id_lieu=labelLieuNormaliseHtml[i].split(",")[-1] if (labelLieuNormaliseHtml[i] != "") else None,
-            # ajoute None pour les dates non saisies
-            date=listeDate[i] if listeDate[i] != "" else None,
-            typeLieu=listeTypeLieu[i])
-        # on ajoute l'objet à la liste d'objets déclarés
-        listeObjet_lieuDeclare.append(objetLieuxDeclares)
-
-def generatObjeteVoyageAvec(listeObjetsVoyageAvec, listePersonnesAccompagnantes):
-    tailleListePersonnesAccompagnantes = len(listePersonnesAccompagnantes)
-    for i in range(0, tailleListePersonnesAccompagnantes):
-        objectVoyageAvec = VoyageAvec(
-            id_personne=listePersonnesAccompagnantes[i]
-        )
-        listeObjetsVoyageAvec.append(objectVoyageAvec)
-
-def generateObjectCategorie(listeCategories, listeObjetsMetiers, listeSoucategories):
-    # on définit la taille de la liste listeCategories qui est la même que celle des souscategories
-    tailleListeCategorie = len(listeCategories)
-
-    # pour chaque index de la liste on crée un objet LienRegistresCategories
-    for i in range(0, tailleListeCategorie):
-        if listeCategories[i] != 'aucune':
-            idSousCat = None
-            if listeSoucategories:
-                idSousCat = listeSoucategories[i]
-
-            objetLienRegistreCategorie = LienRegistresCategories(
-                id_categorie=listeCategories[i],
-                id_souscategorie=idSousCat
-            )
-            listeObjetsMetiers.append(objetLienRegistreCategorie)
-
-
+# déclaration d'une class pour utiliser ses variables et ses méthodes statiques
+# classe utilisée pour améliorer les performances de chargement de la page index qui initialement faisait beaucoup de requêtes en base de donées;
+# la variable statique listePersonne est vide quand on lance le serveur, elle est vidée quand on modifie la personne, quand on crée un registre, quand on supprime un registre ou une personne
+class dataCache:
+    listePersonnes = []
 #############################################################################
 #                             PAGES PRESENTATION                            #
 #############################################################################
 
 @appli.route('/')
 def intro():
-    personnes = Personne.query.order_by(Personne.id.desc()).limit(4).all()
+    personnes = Personne.query.order_by(Personne.id.desc()).all()
 
     return render_template('intro.html', title='Accueil', personnes=personnes)
 
@@ -146,26 +47,85 @@ def credits():
 @appli.route('/index', methods=["GET", "POST"])
 def index():
     titre = "Index"
+    # recupération de la liste des lieux pour assurer l'automplete dans l'input HTML des lieux. on passe le nom en français, le département, le pays et l'id du lieu
+    listeNomLieu = extractLieuxComplet()
+    listeNomLieuEnregistrement = extractLieuxEnregistrementComplet()
+    # récupération des cotes d'archives sous la forme de tuples # résultat du type [('AM Agen 2i20',), ('AM Agen 2i19',), ('AM Agen 2i21',), ('AM Agen 2i25',), ('AM Agen 2i26',),
+    listeTuplesCotes = db.session.query(DetailRegistre.cote).distinct().order_by(DetailRegistre.cote.asc()).all()
+    listeCotes = []
+    for nom in listeTuplesCotes:
+        # récupérer uniquement le premier éléméent de la liste qui est le nom de l'archive et l'ajouter à une liste qui va etre envoyé au formulaire
+        listeCotes.append(nom[0])
 
-    # recupération de la liste des catégories professionnemmes pour les passer dans l'input HTML dans les filtres
+    # récupération de la base des types de documents
+    listeTypeDocu = db.session.query(DetailRegistre.natureDoc).distinct().all()
+
+
+    collector = db.session.query(DetailRegistre.collecte).distinct().all()
+    # recupération de la liste des catégories professionnelles, caractéristiques physiques pour les passer dans l'input HTML dans les filtres
     categories = Categorie.query.all()
-    caracteristiquesPysiques= db.session.query(CaracteristiquePhysique.labelCaracteristique).distinct()
+
+    caracteristiquesPys= db.session.query(CaracteristiquePhysique.labelCaracteristique).distinct().all()
+
+    caracteristiquesPysiques = sorted(caracteristiquesPys, key=sortByPhysique)
 
     filtreTemporaire = {}
 
+    # si la variable statique dataCache.listePersonnes est vide
+    if not dataCache.listePersonnes:
+        # on requete la bdd
+        # résultat attendu où le nr représente le nombre de registre par personne
+        # [(1, <Personne Abadi>),(2, <Personne Abadie>), (1, <Personne Abadie>), (2, <Personne Allouer>),(1, <Personne Ambroise>), (7, <Personne Ambrosini>),
+        listePersonnes = db.session.query(func.count(DetailRegistre.id_personne),Personne).distinct().join(DetailRegistre, DetailRegistre.id_personne == Personne.id). \
+            order_by(Personne.nom). \
+            order_by(Personne.prenom). \
+            group_by(Personne.id). \
+            all()
+
+        # déclare une liste de personnes qui sera envoyée au html pour générer la datatable qui récupère le résulat de query pour avoir une liste de listes
+        # besoin d'obtenir cette forme pour datatable [[3138, 'Abadi', 'Jean-Jacques', 1814, 'non renseigné'], [4177, 'Abadie', 'Bernard', 1797, 'Lourde'],
+        completeListWithPerson = []
+
+        for person in listePersonnes:
+            listeElement = []
+            listeElement.append(person[1].id)
+            listeElement.append(person[1].nom)
+            if person[1].prenom:
+                listeElement.append(person[1].prenom)
+            else:
+                listeElement.append("non renseigné")
+            if person[1].anneeNaissance :
+                listeElement.append(person[1].anneeNaissance)
+            else:
+                listeElement.append("non renseigné")
+            if person[1].lieux_naissance:
+                listeElement.append(person[1].lieux_naissance.nomLieuFr)
+            else:
+                listeElement.append("non renseigné")
+            listeElement.append(person[0])
+            completeListWithPerson.append(listeElement)
+        # affecte à la variable statique la liste completeListWithPerson
+        dataCache.listePersonnes = completeListWithPerson
+
+    # instantiation de la variable statique listePersonnes de la class dataCache.
+    # la variable listePersonnes prendra les valeurs de la variable statique affectée au préalable
+    personneListe = dataCache.listePersonnes
+
     if request.method == "GET":
-        personnes = db.session.query(Personne.id, Personne.nom, Personne.prenom, Personne.anneeNaissance).all()
         # retourne la page html en lui passant comme paramètre titre et personnes
+
         return render_template('index.html', title = titre,
-                               personnes= personnes,
+                               personnes= personneListe,
                                categories=categories,
                                caracteristiquesPysiques=caracteristiquesPysiques,
-                               filtreTemporaire=filtreTemporaire)
+                               filtreTemporaire=filtreTemporaire,
+                               lieux=listeNomLieu,
+                               lieuxEnregistrement =listeNomLieuEnregistrement,
+                               collector=collector,
+                               listeTypeDocu= listeTypeDocu,
+                               listeCotes=listeCotes)
 
     elif request.method == "POST":
-
-        # REQUETE DE BASE les Personnes uniques
-        resultResearch = db.session.query(Personne.id, Personne.nom, Personne.prenom, Personne.anneeNaissance).distinct()
 
         # récupérer les infos sur le sexe ex [Femme, Homme]
         filterSexe = request.form.getlist("sexe", None)
@@ -175,119 +135,307 @@ def index():
         filtreSousCategorie = request.form.getlist("souscategorie", None)
         #récupère les caractéristiques physiques
         pysique=request.form.getlist("physique", None)
-
+        # récupère les informations pour epoux-se
         epoux = request.form.get("epoux", None)
-
+        # récupère les informations pour enfants
         enfants = request.form.get("enfants", None)
+        # récupère les informations pour le lieu de naissance
+        lieuNaissanceComplet = request.form.get("bornPlace", None)
+        listeLieuNaissance = lieuNaissanceComplet.split(",")
+        # on récupère le dernière de la liste, l'id du lieu
+        id_lieuNaissance = listeLieuNaissance[-1]
 
-        membreFamille = request.form.get("membreFamille", None)
-        autrePersonne = request.form.get("autrePersonne", None)
+        # récupère les informations pour le lieu d'enregistrement
+        lieuEnregistrementComplet = request.form.get("registerPlace", None)
+        listeLieuEnregistrement = lieuEnregistrementComplet.split(",")
+        # on récupère le dernière de la liste, l'id du lieu
+        id_lieuEnregistrement = listeLieuEnregistrement[-1]
+
+        # récupère les informations pour la date du début de l'enregistrement
+        anneeEnregistrementDebut =  request.form.get("debut", None)
+
+        # récupère les informations pour la date de fin de l'enregistrement
+        anneeEnregistrementFin = request.form.get("fin", None)
+
+        # on récupère l'auteur de la collecte
+        auteurCollecte = request.form.get("collecte")
+        # on récupère le type de document
+        typeDoc = request.form.get("typedoc")
+        # on récupère la cote
+        cote = request.form.get("coteArchive")
+
+        # REQUETE DE BASE les Personnes uniques
+        #requête sur le model Personne et sur le nb de registre avec une jointeure dès maintenant avec detailsRegistre
+        resultResearch = db.session.query(func.count(DetailRegistre.id_personne),(Personne)).distinct().join(DetailRegistre, DetailRegistre.id_personne == Personne.id)
+        # déclaration des alias pour faire des jointures sur la table lieux depuis Personnes et LieuxDeclares et éviter la répetition du "from lieux" qui génère une erreur en base
+        lieu1 = aliased(Lieu)
+        lieu2 = aliased(Lieu)
 
         if filterSexe:
             filtreTemporaire["Sexe"] = filterSexe
-            # on rajoute à la reqête le filtre pour le sexe avec une requête in_()
+            # on rajoute à la reqête le filtre pour le sexe avec une requête in_().
+            # Cet opérateur prend en param une liste d'elements. ex: ['Femme', 'Inconnu']
             resultResearch=resultResearch.filter(Personne.sexe.in_(filterSexe))
 
-        # si l'un des deux filtres catagories ou sous-catégorie a été coché
-        if filtreCategorie or filtreSousCategorie or pysique or epoux or enfants or membreFamille or autrePersonne:
-            # on rajoute à la requete de base les jointures pour DetailsRegistre
-            resultResearch = resultResearch.join(DetailRegistre, DetailRegistre.id_personne == Personne.id)
 
-            if epoux == "oui":
-                filtreTemporaire["Accompagnés par epoux.se"] = epoux
-                resultResearch=resultResearch.filter(DetailRegistre.epoux == 1)
-            if epoux == "non":
-                filtreTemporaire["Accompagnés par epoux.se"] = epoux
-                resultResearch=resultResearch.filter(DetailRegistre.epoux == 0)
 
-            if enfants =="oui":
-                filtreTemporaire["enfants"] = enfants
-                resultResearch = resultResearch.filter(DetailRegistre.nbEnfants != None)
-            if enfants == "non":
-                filtreTemporaire["enfants"] = enfants
-                resultResearch = resultResearch.filter(DetailRegistre.nbEnfants == None)
+        if lieuNaissanceComplet:
+            filtreTemporaire["lieu naissance"] = lieuNaissanceComplet
+            resultResearch = resultResearch.join(lieu1, lieu1.id == Personne.id_lieuxNaissance).filter(
+                lieu1.id == id_lieuNaissance)
 
-            if membreFamille == "oui":
-                filtreTemporaire["autre membre de famille"] = membreFamille
-                resultResearch = resultResearch.filter(DetailRegistre.nbAutreMembre != None)
-            if membreFamille == "non":
-                filtreTemporaire["autre membre de famille"] = membreFamille
-                resultResearch = resultResearch.filter(DetailRegistre.nbAutreMembre == None)
+        if lieuEnregistrementComplet or anneeEnregistrementDebut or anneeEnregistrementFin:
+            resultResearch = resultResearch. \
+                join(LieuDeclare, DetailRegistre.id == LieuDeclare.id_registre).\
+                filter(LieuDeclare.typeLieu == "Enregistrement")
 
-            if autrePersonne =="oui":
-                filtreTemporaire["autre personnes"] = autrePersonne
-                resultResearch = resultResearch.filter(DetailRegistre.nbPersSupplement != None)
-            if autrePersonne =="non":
-                filtreTemporaire["autre personnes"] = autrePersonne
-                resultResearch = resultResearch.filter(DetailRegistre.nbPersSupplement == None)
+            if lieuEnregistrementComplet:
+                filtreTemporaire["lieu enregistrement"] = lieuEnregistrementComplet
+                resultResearch = resultResearch.\
+                    join(lieu2, lieu2.id == LieuDeclare.id_lieu). \
+                    filter(lieu2.id == id_lieuEnregistrement)
 
-            if pysique:
-                filtreTemporaire["Caractéristiques physiques"] = pysique
-                resultResearch = resultResearch.join(CaracteristiquePhysique,
-                                                     CaracteristiquePhysique.id_registre == DetailRegistre.id). \
-                    filter(CaracteristiquePhysique.labelCaracteristique.in_(pysique))
+            if anneeEnregistrementDebut and anneeEnregistrementFin:
+                filtreTemporaire["Début"] = anneeEnregistrementDebut
+                filtreTemporaire["Fin"] = anneeEnregistrementFin
+                resultResearch = resultResearch.filter(extract('year', LieuDeclare.date) >= anneeEnregistrementDebut). \
+                    filter(extract('year', LieuDeclare.date) <= anneeEnregistrementFin)
 
-            # si l'un des filtres relèves des catégories
-            if filtreCategorie or filtreSousCategorie :
-                # on rajoute à la requete de base+jointure avec DetailsRegistre les jointures les LienRegistresCategories
-                resultResearch=resultResearch.join(LienRegistresCategories, DetailRegistre.id == LienRegistresCategories.id_registre)
+            elif anneeEnregistrementDebut :
+                filtreTemporaire["Début"] = anneeEnregistrementDebut
+                resultResearch = resultResearch.filter(
+                    extract('year', LieuDeclare.date) >= anneeEnregistrementDebut)
 
-                # si le filtre catégorie existe
-                if filtreCategorie:
-                    filtreTemporaire["categorie"] = filtreCategorie
-                    # on construit la requête complète pour Categorie
-                    # on rajoute la jointure pour Categorie et la condition where avec in_() si la/les catégories cochées sont dans le champs labelCategorie.
-                    # Le résultat sera une addition de toutes les personnes qui sont regroupées sous les catégories mentionnées (l'equivalement de OU)
-                    resultResearch = resultResearch.join(Categorie, LienRegistresCategories.id_categorie == Categorie.id).\
-                        filter(Categorie.labelCategorie.in_(filtreCategorie))
+            elif anneeEnregistrementFin:
+                filtreTemporaire["Fin"] = anneeEnregistrementFin
+                resultResearch = resultResearch.filter(extract('year', LieuDeclare.date) <= anneeEnregistrementFin)
 
-                    # si filtre categorie et souscategorie ont été cochés à la fois
-                    if filtreSousCategorie:
-                        filtreTemporaire["souscategorie"] = filtreSousCategorie
-                    # on consrtruit une requête complète uniquement pour les souscategories
-                        resultResearchSoucat = db.session.query(Personne.id, Personne.nom, Personne.prenom,Personne.anneeNaissance).distinct(). \
-                            join(DetailRegistre, DetailRegistre.id_personne == Personne.id). \
-                            join(LienRegistresCategories, DetailRegistre.id == LienRegistresCategories.id_registre).\
-                            join(Souscategorie, LienRegistresCategories.id_souscategorie == Souscategorie.id).\
-                            filter(Souscategorie.labelSouscategorie.in_(filtreSousCategorie))
-                        # on fait l'union entre les catégories et les sous-categories
-                        # le résultat sera une addition de toutes les personnes qui relèvent de telle(s) catégories et les personnes qui relèvenrt de telle(s) sous-categories
-                        resultResearch = resultResearch.union(resultResearchSoucat)
 
-                # si la soucategorie a été cochée mais pas la categorie, on rajoute à la requête de base suite à la condition (if filtreCategorie or filtreSousCategorie)
-                # la requête finale pour les sous-catégories seulement
-                elif filtreSousCategorie:
+
+        if auteurCollecte:
+            filtreTemporaire["Auteur de la collecte"] = auteurCollecte
+            resultResearch= resultResearch.filter(DetailRegistre.collecte==auteurCollecte)
+
+        if typeDoc :
+            filtreTemporaire["Type de document"] = typeDoc
+            resultResearch = resultResearch.filter(DetailRegistre.natureDoc == typeDoc)
+
+        if cote :
+            filtreTemporaire["Cote d'archive"] = cote
+            resultResearch = resultResearch.filter(DetailRegistre.cote == cote)
+
+        if epoux == "oui":
+            filtreTemporaire["Accompagnés par epoux.se"] = epoux
+            resultResearch=resultResearch.filter(DetailRegistre.epoux == 1)
+        if epoux == "non":
+            filtreTemporaire["Accompagnés par epoux.se"] = epoux
+            resultResearch=resultResearch.filter(DetailRegistre.epoux == 0)
+
+        if enfants =="oui":
+            filtreTemporaire["enfants"] = enfants
+            resultResearch = resultResearch.filter(DetailRegistre.nbEnfants != None)
+        if enfants == "non":
+            filtreTemporaire["enfants"] = enfants
+            resultResearch = resultResearch.filter(DetailRegistre.nbEnfants == None)
+
+        if pysique:
+            # la fonction in_() compare si l'élément existe dans une liste
+            filtreTemporaire["Caractéristiques physiques"] = pysique
+            resultResearch = resultResearch.join(CaracteristiquePhysique,
+                                                 CaracteristiquePhysique.id_registre == DetailRegistre.id). \
+                filter(CaracteristiquePhysique.labelCaracteristique.in_(pysique))
+
+# CATEGORIES + SOUSCATEGORIES
+        topUnionCatSoucat = False
+        # si l'un des filtres relève des catégories et /ou souscategories
+        if filtreCategorie or filtreSousCategorie :
+            # on rajoute à la requete de base la table de jointures LienRegistresCategories
+            resultResearch=resultResearch.join(LienRegistresCategories, DetailRegistre.id == LienRegistresCategories.id_registre)
+
+            # si le filtre catégorie est coché
+            if filtreCategorie:
+                filtreTemporaire["categorie"] = filtreCategorie
+                # on rajoute la jointure pour Categorie et la condition where avec in_()
+                # Le résultat sera une addition de toutes les personnes qui sont regroupées sous les catégories mentionnées (l'equivalement de OU)
+                resultSearchCat = resultResearch
+                resultSearchCat = resultSearchCat.join(Categorie, LienRegistresCategories.id_categorie == Categorie.id).\
+                    filter(Categorie.labelCategorie.in_(filtreCategorie)).group_by(Personne.id)
+
+                # si filtre categorie et souscategorie ont été cochés à la fois
+                if filtreSousCategorie:
                     filtreTemporaire["souscategorie"] = filtreSousCategorie
-                    resultResearch = resultResearch.join(Souscategorie, LienRegistresCategories.id_souscategorie == Souscategorie.id).\
-                        filter(Souscategorie.labelSouscategorie.in_(filtreSousCategorie))
+                # on construit une requête complète uniquement pour les souscategories
+                    #db.session.query(func.count(DetailRegistre.id_personne),(Personne)).distinct().
+                    # join(DetailRegistre, DetailRegistre.id_personne == Personne.id)
+                    resultResearchSoucat= resultResearch
+                    resultResearchSoucat = resultResearchSoucat.join(Souscategorie, LienRegistresCategories.id_souscategorie == Souscategorie.id). \
+                        filter(Souscategorie.labelSouscategorie.in_(filtreSousCategorie)).group_by(Personne.id)
 
-        resultResearch = resultResearch.order_by(Personne.nom.asc()).all()
-        return render_template('index.html', title=titre, personnes=resultResearch, categories=categories, caracteristiquesPysiques=caracteristiquesPysiques, filtreTemporaire=filtreTemporaire)
+                    # on fait l'union entre les catégories et les sous-categories
+                    # le résultat sera une addition de toutes les personnes qui relèvent de telle(s) catégories et les personnes qui relèvenrt de telle(s) sous-categories
+                    resultResearch = resultSearchCat.union(resultResearchSoucat)
+                    topUnionCatSoucat = True
+
+                else:
+                    resultResearch=resultSearchCat
+
+            # si la soucategorie a été cochée mais pas la categorie, on rajoute à la requête de base la jointure finale pour les sous-catégories seulement
+            elif filtreSousCategorie:
+                filtreTemporaire["souscategorie"] = filtreSousCategorie
+                resultResearch = resultResearch.join(Souscategorie, LienRegistresCategories.id_souscategorie == Souscategorie.id).\
+                    filter(Souscategorie.labelSouscategorie.in_(filtreSousCategorie))
+
+        # requête de base complétée avec order by pour calculer le nb de registre. Résultat attendu [(1, <Personne Abadi>),(2, <Personne Abadie>), (2, <Personne Allouer>), (7, <Personne Ambrosini>)]
+        resultResearch = resultResearch.order_by(Personne.nom). \
+            order_by(Personne.prenom)
+
+        if topUnionCatSoucat == False:
+            resultResearch=resultResearch.group_by(Personne.id)
+
+        resultResearch=resultResearch.all()
+
+        #si on clique sur le bouton Filter
+        if request.form["submit_button"] == "filter":
+            # traite la liste de type de document envoyée au html pour ne pas retrouner le type de document séléctionné
+            if typeDoc :
+                for tuple in listeTypeDocu:
+                    if tuple[0] == typeDoc:
+                        listeTypeDocu.remove(tuple)
+            # traite la liste de collecte envoyée au html pour ne pas retrouner la personne séléctionnée
+            if auteurCollecte:
+                for tuple in collector:
+                    if tuple[0] == auteurCollecte:
+                        collector.remove(tuple)
+
+            personneListe = []
+
+            for person in resultResearch:
+                listeElement = []
+                listeElement.append(person[1].id)
+                listeElement.append(person[1].nom)
+                if person[1].prenom:
+                    listeElement.append(person[1].prenom)
+                else:
+                    listeElement.append("non renseigné")
+                if person[1].anneeNaissance :
+                    listeElement.append(person[1].anneeNaissance)
+                else:
+                    listeElement.append("non renseigné")
+                if person[1].lieux_naissance:
+                    listeElement.append(person[1].lieux_naissance.nomLieuFr)
+                else:
+                    listeElement.append("non renseigné")
+                listeElement.append(person[0])
+                personneListe.append(listeElement)
+
+            return render_template('index.html',
+                                   title=titre,
+                                   personnes=personneListe,
+                                   categories=categories,
+                                   caracteristiquesPysiques=caracteristiquesPysiques,
+                                   filtreTemporaire=filtreTemporaire,
+                                   lieux=listeNomLieu,
+                                   lieuxEnregistrement =listeNomLieuEnregistrement,
+                                   collector=collector,
+                                   listeTypeDocu=listeTypeDocu,
+                                   listeCotes=listeCotes
+                                   )
+
+        # si on clique sur le bouton Télecharger
+        elif request.form["submit_button"] == "download":
+            # resultResearch prend la forme [<Personne Lalun>, <Personne Lafargue>, <Personne Bertani>, <Personne Bouthor>, <Personne Calpe>,...]
+            outputdata = request.form.get ("outputdata", None)
+
+            if outputdata == "dcomplet" :
+
+                # stream the response as the data is generated. Appel de la méthode generateCompleteCSV
+                response = Response(stream_with_context(generateCompleteCSV(resultResearch)), mimetype='text/csv')
+                # add a filename
+                # add a filename
+                response.headers['Content-Disposition'] = 'attachment; filename={}'.format('extractionCuriosites.csv')
+                return response
+
+            if outputdata=="dreduit":
+                # on declare une liste rows
+
+                # stream the response as the data is generated. Appel de la méthode generateReducedCsv
+                response = Response(stream_with_context(generateReducedCsv(resultResearch, cote)),  mimetype='text/csv')
+                # add a filename
+                response.headers['Content-Disposition'] = 'attachment; filename={}'.format('extractionCuriosites.csv')
+                return response
+
+        elif request.form["submit_button"] == "reset":
+            # instantiation de la variable statique listePersonnes de la class dataCache.
+            # la variable listePersonnes prendra les valeurs de la variable statique affectée au préalable
+            personneListe = dataCache.listePersonnes
+
+
+    return render_template('index.html', title=titre,
+                                       personnes=personneListe,
+                                       categories=categories,
+                                       caracteristiquesPysiques=caracteristiquesPysiques,
+                                       filtreTemporaire=filtreTemporaire,
+                                       lieux=listeNomLieu,
+                                        lieuxEnregistrement =listeNomLieuEnregistrement,
+                                       collector=collector,
+                                       listeTypeDocu=listeTypeDocu,
+                                       listeCotes=listeCotes
+                                  )
+
 
 @appli.route('/personne/<int:identifier>')
 def notice (identifier):
     titre = "Notice personne"
     # instanciation d'un objet personne avec un identifiant personne
     personneUnique = Personne.query.get(identifier)
+    listePhysiqueNotice=[]
+    listeProfessionOrigineNotice = []
 
     if personneUnique:
         # instanciation d'un objet DetailRegistre (qui contient tous les attributs de la classe)
         # résultat du type: [<DetailRegistre 872>, <DetailRegistre 953>, <DetailRegistre 1004>, <DetailRegistre 1736>, <DetailRegistre 4196>]
-        listeDetailsRegistres = personneUnique.registresPers
+        # Sorte la liste des registre par date en ordre chronologique
+        listeDetailsRegistres = sorted(personneUnique.registresPers, key=sortByDateEnregistrement)
+
 
         for registre in listeDetailsRegistres:
             # on change l'ordre des éléments dans les lieux declarés pour les afficher dans un ordre logique: Naissance, Domicile, délivrance du passeport, dernier passage, visa
             # (à l'aide de la methode sortByDestination créée auparavant) et on fait une réafectation de l'attribut lieuxDeclares de l'objet DetailRegistre
             # utilisation de la fonction sorted qui prend comme paramètres une liste et le nom d'une fonction (!! ce n'est pas un appel de fonction)
             registre.lieuxDeclares = sorted(registre.lieuxDeclares, key=sortByDestination)
+            #Ajoute à une liste le contenu du champ caracteristiquesPhysiques et professionOrigine
+            listePhysiqueNotice.append(registre.caracteristiquesPhysiques)
+            listeProfessionOrigineNotice.append(registre.professionOrigine)
+        #rend uniques les éléments contenu dans les listes
+        listeProfessionUnique=set(listeProfessionOrigineNotice)
+        listePhysiqueUnique = set(listePhysiqueNotice)
 
         return render_template("notice.html",
                                title=titre,
                                unique=personneUnique,
-                               detailsRegistres=listeDetailsRegistres)
+                               detailsRegistres=listeDetailsRegistres,
+                               listeProfessionUnique=listeProfessionUnique,
+                               listePhysiqueUnique=listePhysiqueUnique)
 
     else:
         flash("La personne que vous cherchez n'existe pas", "warning")
+        return redirect("/index")
+
+@appli.route('/registre/<int:identifier_registre>')
+def registre (identifier_registre):
+    titre = "Enregistrement"
+    # instanciation d'un objet personne avec un identifiant personne
+    registreUnique = DetailRegistre.query.get(identifier_registre)
+
+    if registreUnique:
+
+        return render_template("registre.html",
+                               title=titre,
+                               registreUnique=registreUnique,
+                               code="display")
+
+    else:
+        flash("L'enregistrement que vous cherchez n'existe pas", "warning")
         return redirect("/index")
 
 @appli.route('/personneLieux/<int:identifier>')
@@ -300,7 +448,6 @@ def persLieux(identifier):
     """
     personneUnique= Personne.query.get(identifier)
 
-    listeLieu=[]
     if personneUnique:
         # instanciation d'un objet DetailRegistre (qui contient tous les attributs de la classe)
         # résultat du type: [<DetailRegistre 872>, <DetailRegistre 953>, <DetailRegistre 1004>, <DetailRegistre 1736>, <DetailRegistre 4196>]
@@ -318,30 +465,139 @@ def persLieux(identifier):
 def catProfession():
     titre = "Catégories professionnelles"
 
-
     # requete qui permet de regrouper le nombre de personnes par catégorie de métier par ordre aphabétique dans une liste de tuples comme ici:
     # [(295, <Catégorie professionnelle: acrobatie>), (128, <Catégorie professionnelle: autres metiers>), (2, <Catégorie professionnelle: aérostatier>),,(...)]
-    nombrePersParCat = db.session.query(func.count((Personne.id).distinct()),
-                                        Categorie). \
+    nombrePersParCat = db.session.query(func.count((Personne.id).distinct()),Categorie). \
                                         filter(DetailRegistre.id_personne == Personne.id). \
                                         filter(DetailRegistre.id == LienRegistresCategories.id_registre). \
                                         filter(LienRegistresCategories.id_categorie == Categorie.id). \
                                         group_by(Categorie).order_by (Categorie.labelCategorie.asc()).all()
 
-    # on trie la liste pour afficher à la fin: "autres metiers", "indétérminé" et "domestique"
-    nombrePersParCat= sorted(nombrePersParCat, key=sortByMetiers)
-
     # requete qui permet de regrouper le nombre de personnes par sous-catégorie de métier dans une liste de tuple comme ici:
     # [(89, <Souscategorie animaux savants>), (21, <Souscategorie artificier>), (205, <Souscategorie chanteur>), (14, <Souscategorie combat d'animaux>),(...)]
-    nombrePersParSousCat = db.session.query(func.count((Personne.id).distinct()),
-                                        Souscategorie). \
+    nombrePersParSousCat = db.session.query(func.count((Personne.id).distinct()),Souscategorie). \
                                         filter(DetailRegistre.id_personne == Personne.id). \
                                         filter(DetailRegistre.id == LienRegistresCategories.id_registre). \
                                         filter(LienRegistresCategories.id_souscategorie == Souscategorie.id). \
                                         group_by(Souscategorie).all()
 
+    # Requeête avec left join pour récupérer les métiers déclarés et les catégories et les souscatégories associés.
+    # utilise les db.relationships pour le join (LienRegistresCategories.souscategories)
+    # resultat du type liste = [(2, "brassier et joueur de vielle", "autres metiers", None), (3, "chanteur de place", "spectacle musical", "chanteur")]
+    countMetiersDeclares = db.session.query(func.count(DetailRegistre.id_personne.distinct()),DetailRegistre.professionOrigine, Categorie.labelCategorie,
+                                        Souscategorie.labelSouscategorie). \
+        join(Souscategorie, LienRegistresCategories.souscategories, isouter=True). \
+        filter(LienRegistresCategories.id_registre == DetailRegistre.id). \
+        filter(Categorie.id == LienRegistresCategories.id_categorie). \
+        group_by(DetailRegistre.professionOrigine, Categorie.labelCategorie,
+                                        Souscategorie.labelSouscategorie). order_by(Categorie.labelCategorie.asc()).\
+        all()
 
-    return render_template('catProfession.html', title = titre, nombrePersParCat = nombrePersParCat, nombrePersParSousCat = nombrePersParSousCat)
+    # on trie la liste pour afficher à la fin: "autres metiers", "indétérminé" et "domestique"
+    countMetiersDeclares = sorted(countMetiersDeclares, key=sortByMetiers)
+
+    totalCategoriesSousCatmetier={}
+    boolSouscat=False
+    boolCat=False
+
+    for element in countMetiersDeclares:
+        metier={}
+        #ajoute au traitement uniquement les cas où le metiers déclaré a été saisi ainsi également la catégorie
+        if element[1] and element[2]:
+            metier[element[1]]=element[0]
+            for objetCategorie in nombrePersParCat:
+                if objetCategorie[1].labelCategorie == element[2]:
+                    boolCat = True
+                    # si le dictionnaire n'existe pas ou que la catégorie n'existe pas dans le dictionnaire,
+                    # on ajoute la clé de la catégorie pour créer le dictionnaires
+                    if not totalCategoriesSousCatmetier or element[2] not in totalCategoriesSousCatmetier:
+                        totalCategoriesSousCatmetier[element[2]] = {"nbPersCat": objetCategorie[0],
+                                                                    "idCat": objetCategorie[1].id,
+                                                                    "souscategories": {}, "metiers": {}}
+                    # si le dictionnaire ou la catégorie existent
+                    else:
+                        # si le tuple contient une souscategorie
+                        if element[3]:
+                            for objetsSoucategorie in nombrePersParSousCat:
+                                if objetsSoucategorie[1].labelSouscategorie == element[3]:
+                                    boolSouscat = True
+                                    souscategorie = {}
+                                    # si la souscategorie n'existe pas on la crée avec le premier dictionnaire de metiers
+                                    if element[3] not in totalCategoriesSousCatmetier[element[2]]["souscategories"]:
+                                        souscategorie[element[3]] = {"nbPersSouscat":objetsSoucategorie[0],
+                                                                     "idSouscat":objetsSoucategorie[1].id,
+                                                                     "metiers":metier}
+                                        totalCategoriesSousCatmetier[element[2]]["souscategories"].update(souscategorie)
+                                    else:
+                                        totalCategoriesSousCatmetier[element[2]]["souscategories"][element[3]]["metiers"].update(metier)
+
+                                elif boolSouscat == True:
+                                    boolSouscat = False
+                                    break
+                        # sinon si element[3] n'existe pas (aka la souscategorie est none)
+                        else:
+                            # si le dictionnaire n'existe pas,ou que la catégorie n'existe pas on ajoute la clé de la catégorie pour créer le dictionnaires, la souscatégorie
+                            if element[2] not in totalCategoriesSousCatmetier:
+                                totalCategoriesSousCatmetier[element[2]] = {"nbPersCat": objetCategorie[0],
+                                                                            "idCat": objetCategorie[1].id,
+                                                                            "souscategories": {}, "metiers":metier }
+                            # si le dictionnaire existe et qu'il contient la clé de la catégorie, on fait un update de la souscatégorie
+                            elif element[2] in totalCategoriesSousCatmetier:
+                                totalCategoriesSousCatmetier[element[2]]["metiers"].update(metier)
+                elif boolCat==True:
+                    boolCat= False
+                    break
+
+
+    return render_template('catProfession.html', title = titre,
+                           totalCategoriesSousCatmetier=totalCategoriesSousCatmetier)
+
+@appli.route("/graphiques")
+def graphique():
+    titre="Graphiques"
+
+    # requete qui permet de regrouper le nombre de personnes par catégorie de métier par ordre aphabétique dans une liste de tuples comme ici:
+    # [(295, <Catégorie professionnelle: acrobatie>), (128, <Catégorie professionnelle: autres metiers>), (2, <Catégorie professionnelle: aérostatier>),,(...)]
+    nombrePersParCat = db.session.query(func.count((Personne.id).distinct()),
+                                        Categorie). \
+        filter(DetailRegistre.id_personne == Personne.id). \
+        filter(DetailRegistre.id == LienRegistresCategories.id_registre). \
+        filter(LienRegistresCategories.id_categorie == Categorie.id). \
+        group_by(Categorie).order_by (Categorie.labelCategorie.asc()).all()
+
+    # requete qui permet de regrouper le nombre de personnes par sous-catégorie de métier dans une liste de tuple comme ici:
+    # [(89, <Souscategorie animaux savants>), (21, <Souscategorie artificier>), (205, <Souscategorie chanteur>), (14, <Souscategorie combat d'animaux>),(...)]
+    nombrePersParSousCat = db.session.query(func.count((Personne.id).distinct()),
+                                            Souscategorie). \
+        filter(DetailRegistre.id_personne == Personne.id). \
+        filter(DetailRegistre.id == LienRegistresCategories.id_registre). \
+        filter(LienRegistresCategories.id_souscategorie == Souscategorie.id). \
+        group_by(Souscategorie).all()
+
+    # données nécessaires pour la bib chart de JS qui est une liste de dictionnaires
+    totalData = []
+
+    for categorie in nombrePersParCat:
+        dicoCategorie = {}
+        dicoCategorie["name"] = categorie[1].labelCategorie
+        dicoCategorie["children"] = []
+        if categorie[1].souscategories:
+            for tupleSouscategorie in nombrePersParSousCat:
+                if tupleSouscategorie[1].categories.labelCategorie == categorie[1].labelCategorie:
+                    dictionnaireSousCategorie = {}
+                    dictionnaireSousCategorie["name"] = tupleSouscategorie[1].labelSouscategorie
+                    dictionnaireSousCategorie["value"] = tupleSouscategorie[0]
+                    dicoCategorie["children"].append(dictionnaireSousCategorie)
+            totalData.append(dicoCategorie)
+        else:
+            dictionnaireCategorie = {}
+            dictionnaireCategorie["name"] = categorie[1].labelCategorie
+            dictionnaireCategorie["value"] = categorie[0]
+            dicoCategorie["children"].append(dictionnaireCategorie)
+            totalData.append(dicoCategorie)
+
+    return render_template("graphic.html", title = titre, nombrePersParCat = nombrePersParCat, nombrePersParSousCat = nombrePersParSousCat, totalData=totalData)
+
 
 @appli.route('/personnesCategorie/<int:identifier>')
 #la page avec la liste des personnes par catégorie de métier
@@ -360,7 +616,7 @@ def persCat(identifier):
                                         paginate(page=page, per_page=PERSONNES_PAR_PAGES)
 
     if categorie and personneCat:
-        return render_template('pers-Categ.html', personneCat = personneCat, categorie = categorie)
+        return render_template('pers-Categ.html', title = "personne par categorie", personnes = personneCat, categorie = categorie)
 
     else:
         flash("Ce metier n'existe pas", "warning")
@@ -381,7 +637,23 @@ def persSousCat(identifier):
                                         order_by(Personne.nom.asc()). \
                                         paginate(page=page, per_page=PERSONNES_PAR_PAGES)
 
-    return render_template('pers-sousCateg.html', personneSoucatCat = personneSoucatCat, soucategorie = soucategorie)
+    return render_template('pers-sousCateg.html', title='personnes par sous-categorie', personnes = personneSoucatCat, soucategorie = soucategorie)
+
+@appli.route('/personnes-par-metier-declare/<label>')
+def persParMetiersDeclare(label):
+    page = request.args.get("page", 1, type=int)
+    # resultat : une liste du type [(1398, 'Bara', 'Jean-François-Joseph'), (2145, 'Brugoni', 'Antoine'), (1777, 'Brumini', 'Antoine')
+
+    personneParMetier = db.session.query((Personne.id).distinct(), Personne.nom, Personne.prenom). \
+        filter(DetailRegistre.id_personne == Personne.id). \
+        filter(DetailRegistre.professionOrigine == label). \
+        order_by(Personne.nom.asc()). \
+        paginate(page=page, per_page=PERSONNES_PAR_PAGES)
+
+    return render_template('persMetierDeclare.html', title="personnes par métier déclaré",
+                           label=label,
+                           personnes=personneParMetier)
+
 
 @appli.route('/accompagne-par-epoux-se')
 #la page avec la liste des personnes accompagnés par l'époux
@@ -394,7 +666,7 @@ def persEpoux():
         filter(DetailRegistre.epoux == 1). \
         order_by(Personne.nom.asc()). \
         paginate(page=page, per_page=PERSONNES_PAR_PAGES)
-    return render_template("pers-epoux.html", personneAvecEpoux=personneAvecEpoux )
+    return render_template("pers-epoux.html", title = "personnes accompagnées par epoux-se", personnes=personneAvecEpoux )
 
 @appli.route('/accompagne-par-enfant')
 #la page avec la liste des personnes accompagnés par les enfants
@@ -407,7 +679,7 @@ def persEnfant():
         filter(DetailRegistre.nbEnfants != None). \
         order_by(Personne.nom.asc()). \
         paginate(page=page, per_page=PERSONNES_PAR_PAGES)
-    return render_template("pers-par-enfant.html", personneAvecEnfant=personneAvecEnfant)
+    return render_template("pers-par-enfant.html", title = "personnes accompagnées par enfants", personnes=personneAvecEnfant)
 
 @appli.route('/personneCaracteristiques/<label>')
 #la page avec la liste des personnes par caractéristique physique
@@ -422,7 +694,10 @@ def persCarracteristique(label):
         order_by(Personne.nom.asc()). \
         paginate(page=page, per_page=PERSONNES_PAR_PAGES)
 
-    return render_template('pers-Caracteristiques.html', label=label, personneCaracteristique=personneCaracteristique)
+    return render_template('pers-Caracteristiques.html',
+                           title ="personnes par caractéristique physique",
+                           label=label,
+                           personnes=personneCaracteristique)
 
 @appli.route('/l-passage')
 def passage():
@@ -458,7 +733,7 @@ def persParPass(id_villePassage):
         .filter(LieuDeclare.typeLieu=="Enregistrement").order_by(Personne.nom)\
         .paginate(page=page, per_page=LIEUX_PAR_PAGES)
 
-    return render_template("pers-par-passage.html", persParPassage=persParPassage, villePassage=villePassage )
+    return render_template("pers-par-passage.html", title = "personnes par ville d'enregistrement", personnes=persParPassage, villePassage=villePassage )
 
 @appli.route('/l-naissance')
 def naissance():
@@ -491,19 +766,123 @@ def persParNaissance(id_villeNaissance):
         .paginate(page=page, per_page=LIEUX_PAR_PAGES)
     #print(persParPassage)
 
-    return render_template("pers-par-naissance.html", persParNaissance=persParNaissance, villeNaissance=villeNaissance)
+    return render_template("pers-par-naissance.html", title = "personnes par ville de naissance", personnes=persParNaissance, villeNaissance=villeNaissance)
 
-
-@appli.route('/glossaire')
+@appli.route('/tableau-prefessions')
+@login_required
 def glossaire():
-
-    glossaireMetiers = db.session.query(DetailRegistre.professionOrigine.distinct(),Categorie.labelCategorie, Souscategorie.labelSouscategorie).\
+    #Requeête avec left join pour récupérer les métiers déclarés et les catégories et les souscatégories associés.
+    # utilise les db.relationships pour le join (LienRegistresCategories.souscategories)
+    # résultat du type [("artiste d'agilité", 'acrobatie', "voltigeur / artiste d'agilité"), ('acrobatie 2 petites personnes nain', 'acrobatie', None) ('artiste acrobate', 'acrobatie', None)],
+    glossaireMetiers = db.session.query((DetailRegistre.professionOrigine).distinct(),Categorie.labelCategorie, Souscategorie.labelSouscategorie) .\
+        join(Souscategorie, LienRegistresCategories.souscategories, isouter=True).\
         filter(LienRegistresCategories.id_registre==DetailRegistre.id).\
-        filter(Categorie.id==LienRegistresCategories.id_categorie).\
-        filter(Souscategorie.id==LienRegistresCategories.id_souscategorie)\
-        .all()
+        filter(Categorie.id==LienRegistresCategories.id_categorie). \
+        all()
 
     return render_template('glossaire.html', title="Glossaire de métiers", glossaireMetiers=glossaireMetiers)
+
+@appli.route('/photos-manquantes')
+@login_required
+def displayPhotos():
+
+    listePhotosRegistreBDD =[]
+
+    photos = Photo.query.all()
+    for eachPhoto in photos:
+        if eachPhoto.label_photo == None:
+            pass
+        elif eachPhoto.label_photo == "None":
+            pass
+        elif eachPhoto.label_photo == "":
+            pass
+        else:
+            #on ajoute à la liste le label de la photo et le id du registre
+            listePhotoRegistre=[]
+            formatPhoto = eachPhoto.label_photo + ".jpg"
+            listePhotoRegistre.append(formatPhoto)
+            listePhotoRegistre.append(eachPhoto.id_registre)
+            # on ajoute la liste avec un label photo et un iod de registre à la liste globale
+            listePhotosRegistreBDD.append(listePhotoRegistre)
+
+    differenceBDD_Folder = []
+    photosRepertoire = os.listdir("./curiosity/static/images/Photos_BDD/")
+
+    for couplePhotoRegistre in listePhotosRegistreBDD:
+        #si le label photo existe dans la liste des photos du repertoire
+        if couplePhotoRegistre[0] in photosRepertoire:
+            # on passe
+            pass
+        #sinon on ajoute le couple photo-idregistre à la liste de différence
+        else:
+            differenceBDD_Folder.append(couplePhotoRegistre)
+
+
+    return render_template("photos-manque.html", title="Photos manquantes", differenceBDD_Folder=differenceBDD_Folder)
+
+@appli.route('/archives')
+def archives():
+    archives = db.session.query(DetailRegistre.nomArchive.distinct()). order_by(DetailRegistre.nomArchive.asc())
+    return render_template("archives.html", title="Archives", archives=archives)
+
+@appli.route('/cotes')
+def cotes():
+    cotes = db.session.query(DetailRegistre.cote.distinct()).order_by(DetailRegistre.cote.asc())
+    return render_template("cotes.html", title ="Cotes", cotes=cotes)
+
+@appli.route('/pers-par-archives/<nom_archive>')
+def persParArchives(nom_archive):
+    page = request.args.get("page", 1, type=int)
+    persArchives = db.session.query(Personne.id.distinct(), Personne.nom, Personne.prenom). \
+        join(DetailRegistre, Personne.id == DetailRegistre.id_personne). \
+        filter(DetailRegistre.nomArchive == nom_archive).\
+        order_by(Personne.nom.asc()). \
+        paginate(page=page, per_page=PERSONNES_PAR_PAGES)
+    return render_template("pers-par-archives.html", title = "personnes par archives", personnes=persArchives, nom_archive=nom_archive)
+
+@appli.route('/registre-par-cote/<cote_archive>')
+def registreParCote(cote_archive):
+    page = request.args.get("page", 1, type=int)
+
+    registreCote = db.session.query(DetailRegistre).\
+        filter(DetailRegistre.cote == cote_archive).\
+        order_by(DetailRegistre.nomOrigine).\
+        paginate(page=page, per_page=PERSONNES_PAR_PAGES)
+
+    return render_template("registre-par-cote.html", title="registre par cote", personnes=registreCote, cote_archive=cote_archive)
+
+
+@appli.route("/date-lieu-registre",methods=["GET", "POST"])
+@login_required
+def registerPerDatePlace():
+
+    outputListeDateLieuRegistre=[]
+
+    resultDatelieuxEnregistrement = db.session.query((LieuDeclare.date).distinct(), Lieu.nomLieuFr, DetailRegistre).\
+        filter(LieuDeclare.typeLieu=="Enregistrement").\
+        filter(Lieu.id==LieuDeclare.id_lieu).\
+        filter(DetailRegistre.id==LieuDeclare.id_registre).\
+        order_by(LieuDeclare.date.asc()).all()
+
+    for eachDateLieuRegistre in resultDatelieuxEnregistrement:
+        boolExist = False
+        for element in outputListeDateLieuRegistre:
+            if eachDateLieuRegistre[0] == element[0] and eachDateLieuRegistre[1]==element[1] :
+                boolExist = True
+                element[2].append(eachDateLieuRegistre[2])
+                break
+        if boolExist == False:
+            outputListeDateLieuRegistre.append([eachDateLieuRegistre[0], eachDateLieuRegistre[1], [eachDateLieuRegistre[2]]])
+
+    if request.method == "POST":
+        # récupérer les id des registre des personnes
+        voyageEnsemble = request.form.getlist("persdeclares", None)
+
+
+
+
+    return render_template("date-lieu-registre.html", title="Date et lieu d'enregistrement", outputListeDateLieuRegistre=outputListeDateLieuRegistre)
+
 #############################################################################
 #                             PAGES MODIFICATION-CREATION                   #
 #############################################################################
@@ -517,6 +896,7 @@ def creer_personne():
     # déclaration d'un dictionnaire qui va regrouper les informations saises par l'utilisateurs et qui permet de ne pas perdre les info saisies
     personneTemporaire = {}
     #lieuParDefaut = Lieu.query.filter(Lieu.nomLieu == 'Non renseigné').first()
+
 
     if request.method == "POST":
 
@@ -550,6 +930,17 @@ def creer_personne():
         listeLieuDeces = lieuDecesComplet.split(",")
         id_lieuDeces = listeLieuDeces[-1]
 
+
+        listeAuthorshipPers =[]
+        # users
+        if current_user.is_authenticated:
+            # cherche l'utilisateur dans la base de données.
+            # Le username et le password de l'utilisateur sont fournis avec le formulaire
+            userID = current_user.get_id()
+
+            authorshipPers = AuthorshipPersonne(user_id=userID, role="creator")
+            listeAuthorshipPers.append(authorshipPers)
+
         status, data = Personne.create_person(
                 # récupère le "nom", "prenom", etc dans la valeur de l'attribut name de la balise html <input>, <textatrea> ou <select>
                 nom=nomPersonne,
@@ -560,7 +951,8 @@ def creer_personne():
                 id_lieuxNaissance = id_lieuNaissance,
                 dateDeces=dateDeces,
                 id_lieuDeces= id_lieuDeces,
-                certitudeNP=certitudeNP
+                certitudeNP=certitudeNP,
+                authorshipPers=listeAuthorshipPers
                 )
         if status is True:
             flash("Création d'une nouvelle personne réussie !", "success")
@@ -599,6 +991,16 @@ def modifier_personne(idPersonne):
         id_lieuDeces = listeLieuDeces[-1]
         # Si le résultat de la requete, retourne un lieu, je crée la personne avec l'identifiation du lieu
 
+        listeAuthorshipPers = []
+        # users
+        if current_user.is_authenticated:
+            # cherche l'utilisateur dans la base de données.
+            # Le username et le password de l'utilisateur sont fournis avec le formulaire
+            userID = current_user.get_id()
+
+            authorshipPers = AuthorshipPersonne(user_id=userID, role="contributor")
+            listeAuthorshipPers.append(authorshipPers)
+
         status, data = Personne.modify_person(
             # récupère le "nom", "prenom", etc dans la valeur de l'attribut name de la balise html <input>, <textatrea> ou <select>
             id=idPersonne,
@@ -610,10 +1012,15 @@ def modifier_personne(idPersonne):
             id_lieuxNaissance=id_lieuNaissance,
             dateDeces=request.form.get("dateDeces", None),
             id_lieuDeces=id_lieuDeces,
-            certitudeNP=request.form.get("certitude", None)
+            certitudeNP=request.form.get("certitude", None),
+            authorshipPers=listeAuthorshipPers
         )
         if status is True:
             flash("Modification de personne réussie !", "success")
+
+            # initialise à vide la variable statique de la class dataCache pour relancer la requête en bdd lors de l'appel de la route index.
+            #cela permet de mettre à jours les éléments de description de la personne dans l'index.
+            dataCache.listePersonnes = []
 
             # récupéré l'objet personne qu'on vient de créer
             return redirect("/personne/" + str(idPersonne))
@@ -668,8 +1075,8 @@ def modifier_lieu(id_lieu):
             region=request.form.get("region", None),
             departement=request.form.get("depart", None),
             codeINSEE=request.form.get("codeINSEE", None),
-            lat=request.form.get("lat", None),
-            lng=request.form.get("lng", None),
+            lat=request.form.get("latitude", None),
+            lng=request.form.get("longitude", None),
             id_geonames=request.form.get("idGeonames", None)
         )
         if status is True:
@@ -684,7 +1091,7 @@ def modifier_lieu(id_lieu):
 @login_required
 def creer_registre(idPersonne):
     """
-    Methoide permettand de créer un nouiveau registre pour la personne avec l'identifiant idPersonne
+    Methoide permettant de créer un nouiveau registre pour la personne avec l'identifiant idPersonne
     :param idPersonne: int. identifiant de la personne à laquelle sera rattaché le registre
     :return:
     """
@@ -695,23 +1102,67 @@ def creer_registre(idPersonne):
     #   Requête dans la base pour récupèrer des informations à passer au html   #
     #############################################################################
 
-    #recupération de la liste des lieux pour assurer l'automplete dans l'input HTML des lieux. on passe le nom en français, le département, le pays et l'id du lieu
+    # l'appel de la fonciton extractLieuxCompletpour recupérer la liste des lieux normalisés pour assurer l'automplete dans l'input HTML des lieux.
+    # on passe le nom en français, le département, le pays et l'id du lieu
     listeNomLieu = extractLieuxComplet()
 
-    # recupération de la liste des catégories professionnemmes pour les passer dans l'input HTML à la création du métier
+    # recupération de la liste des catégories professionnemmes et des caractéristiques physiques pour les passer dans l'input HTML à la création du métier
     categories = Categorie.query.all()
+    caracteristiquesPys = db.session.query(CaracteristiquePhysique.labelCaracteristique).distinct().all()
+    caracteristiquesPysiques = sorted(caracteristiquesPys, key=sortByPhysique)
 
-    # on fournit une liste (en dur) avec les types de documents pour l'autocomplete. A mettre à jour si un nouveau type de document est proposé
-    typeDocument = ['Registre visas', 'Souches passeports', 'Liste passeports', 'Passeports']
+    # Si un utilisateur est connecté
+    if current_user.is_authenticated:
+        # retourne l'id de l'utilisateur connecté
+        userID = current_user.get_id()
+
+        #le dernier registre créé par l'utilisateur connecté
+        lastRecord = db.session.query(DetailRegistre).join(AuthorshipRegistre, DetailRegistre.id== AuthorshipRegistre.registre_id)\
+            .join(User, User.id==AuthorshipRegistre.user_id)\
+            .filter(User.id==userID)\
+            .order_by(DetailRegistre.id.desc()).first()
+
+    listeTypeDocument=[]
+    typeDocument= db.session.query(DetailRegistre.natureDoc).distinct().all()
+    for typeDoc in typeDocument:
+            if typeDoc[0] is not None:
+                listeTypeDocument.append(typeDoc[0])
+    # listes des métiers fréquents à insérer automatiquement dans les formulaires pour éviter de les saisir à la main.
+    # 1er mot= le mot trouvé dans les archives, 2e mot= catégorie, 3e mot sous-catégorie si elle existe
+    listeMetiersCourants = [
+        ["acrobate","acrobatie"],
+        ["artiste d'agilité","acrobatie","voltigeur / artiste d'agilité"],
+        ["chanteur","spectacle musical","chanteur"],
+        ["chanteur ambulant","spectacle musical","chanteur"],
+        ["conducteur d'animaux","monstration d'animaux","indéterminé"],
+        ["écuyer","monstration d'animaux","équitation"],
+        ["figuriste","monstration de cires / plâtres / bois"],
+        ["joueur d'instrument","spectacle musical","musicien"],
+        ["joueur d'orgue","joueur / porteur d'orgue"],
+        ["joueur de vielle","spectacle musical","musicien"],
+        ["joueur de violon","spectacle musical","musicien"],
+        ["marchand de cantiques","spectacle musical","marchand de chansons"],
+        ["marchand de chansons","spectacle musical","marchand de chansons"],
+        ["marchand de complaintes","spectacle musical","marchand de chansons"],
+        ["marchand d'estampes","monstration d'images"],
+        ["marchand d'images","monstration d'images"],
+        ["musicien","spectacle musical","musicien"],
+        ["musicien ambulant","spectacle musical","musicien"],
+        ["physicien","spectacle d'illusion", "physicien"],
+        ["porteur d'orgue","joueur / porteur d'orgue"],
+        ["saltimbanque","saltimbanque"],
+        ["voltigeur","acrobatie","voltigeur / artiste d'agilité"]]
+
     # on fournit la liste en dur avec les types de lieux
     listeTypeLieux = ["Naissance", "Domicile", "Délivrance du passeport", "Dernier Passage", "Destination", "Visa",
                       "Décès"]
+
     # on fournit une liste (extraction depuis la bdd) avec le nom des archives pour l'autocomplete.
-    # résultat du type [('Archives municipales -  BEAUNE',), ('Archives municipales -  LYON',), ('Archives municipales -  LIMOGES',)]
+    # résultat du type [('AGEN-Archives municipales ',), ('LYON-Archives municipales ',), ('ALBI-Archives municipales ',) ('COSNE-Archives municipales ',),('SAINT-ETIENNE-Archives municipales',), ('CHALON-Archives municipales ',), ('BOURG-Archives municipales ',), ('BEAUNE-Archives municipales ',)]
     nomsArchive = db.session.query(DetailRegistre.nomArchive).distinct().all()
     listeNomsArchive = []
     for nom in nomsArchive:
-        #cityFirst = nom.split(" - ")
+        #récupérer uniquement le premier éléméent de la liste qui est le nom de l'archive et l'ajouter à une liste qui va etre envoyé au formulaire
         listeNomsArchive.append(nom[0])
 
     ######################################################################################
@@ -723,10 +1174,13 @@ def creer_registre(idPersonne):
                                personneUnique=personneUnique,
                                lieux=listeNomLieu,
                                categories=categories,
-                               typeDocument=typeDocument,
+                               typeDocument=listeTypeDocument,
                                listeNomsArchive=listeNomsArchive,
                                registreTemporaire=registreTemporaire,
-                               listeTypeLieux=listeTypeLieux)
+                               listeTypeLieux=listeTypeLieux,
+                               listeMetiersCourants=listeMetiersCourants,
+                               lastRecord=lastRecord,
+                               caracteristiquesPysiques=caracteristiquesPysiques)
 
     ######################################################################################
     #      Méthode POST: récupère les informations saisies pour chaque régistre         #
@@ -738,11 +1192,22 @@ def creer_registre(idPersonne):
         listeObjetsMetiers =[]
         listeObjetCaracteristiques = []
         listeObjetsVoyageAvec =[]
+        listeObjetsPhotos =[]
 
         # ----- RECUPERATION DES VALEURS DU FORMULAIRE HTML ----##
+
         #NOM+Prenom+taille+professionOrigine+dureeSejour+description+accompagnePar+caracteristiquesPhysiques+autresCaracteristiques
-        nomOrigine = request.form.get("nom", None)
-        prenomOrigine = request.form.get("prenom", None)
+        nomOrigineForm = request.form.get("nom", None)
+        prenomOrigineForm = request.form.get("prenom", None)
+
+        if nomOrigineForm == "" and prenomOrigineForm == "" :
+            nomOrigine = personneUnique.nom
+            prenomOrigine = personneUnique.prenom
+        else:
+            nomOrigine = nomOrigineForm
+            prenomOrigine = prenomOrigineForm
+
+
         taillePersonneHTML = request.form.get("taille", None)
         if "," in taillePersonneHTML:
             taillePersonne = taillePersonneHTML.replace (',', '.')
@@ -761,6 +1226,7 @@ def creer_registre(idPersonne):
         nbPersSupplement = request.form.get("nbAutrePers", None)
         pseudonyme = request.form.get("pseudo", None)
         nomArchive = request.form.get("archive", None)
+        collecte = request.form.get("collecte", None)
 
         if nomArchive == '':
             erreurs.append("Le nom de l'institution d'archive à l'origine de la notice est obligatoire. Vérifier la rubrique 'Ajouter les sources d'archives'")
@@ -773,22 +1239,15 @@ def creer_registre(idPersonne):
         natureDoc = request.form.get("typeDoc", None)
 
         nrOrdre = request.form.get("ordre", None)
-        photoArchive = request.form.get("photo", None)
+
         commentaires = request.form.get("commentaires", None)
 
         # recupération checkbox
         epoux = request.form.get("epoux", None)  # récupère la valeur de l'attribut value
-        borgne = request.form.get("borgne", None)
-        aveugle = request.form.get("aveugle", None)
-        culJatte = request.form.get("cul-de-jatte", None)
-        unijambiste = request.form.get("unijambiste", None)
-        manchot = request.form.get("manchot", None)
-        ampute = request.form.get("ampute", None)
-        cicatrice = request.form.get("cicatrice", None)
-        verole = request.form.get("verole", None)
-        autreCaracteristiques = request.form.get("autreCaracteristiques", None)
 
         #récupération liste, objets complexes
+        listePhotoArchive = request.form.getlist("photo", None)
+
         lieuEnregistrementComplet = request.form.get("lieuPassage", None)
         dateEnregistremnt = request.form.get("datePassage", None)
 
@@ -796,18 +1255,40 @@ def creer_registre(idPersonne):
         listeLabelLieuDeclare = request.form.getlist("listeLieuDeclare", None)
         # recupère une liste avec tous les lieux normalisés
         labelLieuNormaliseHtml = request.form.getlist("listeLieuNormal", None)
+
         # récupère une liste avec toutes les dates
         listeDate = request.form.getlist("listeDates", None)
+        for i in range(0, len(listeDate)):
+            # si les dates sont saisies
+            if listeDate[i] != "":
+                # vérifie le format des dates
+                formatStatusDate = validate(listeDate[i])
+                # si le format est invalide, renvoie une erreur
+                if formatStatusDate == False:
+                    erreurs.append(
+                        "Format de date incorrect. Resaisir selon le modèle JJ-MM-AAAA dans 'Ajouter les lieux et les dates de passage de la personne'")
+                # sinon on change pas la liste
+                else:
+                    listeDate = listeDate
+            else:
+                listeDate = listeDate
+
         # récupère une liste avec tous les types de lieux
         listeTypeLieu = request.form.getlist("listeTypeLieu", None)
 
-        # récupération une liste avec tous les identifiants des personnes qui voyagent avec la personne du registre
+        # récupération d'une liste avec tous les identifiants des personnes qui voyagent avec la personne du registre
         listePersonnesAccompagnantes = request.form.getlist("voyageAvecIdPers", None)
 
-        # récupere les categories et les souscategories
+        # récupere les categories et les souscategories déclarés
         listeCategories = request.form.getlist("cat", None)
         listeSoucategories = request.form.getlist("sousCat", None)
 
+        # récupere les metiers, les categories et les souscategories fréquents
+        listeMetiersFrequent = request.form.getlist("metierFrequent", None)
+        listeCatFrequent = request.form.getlist("categorieFrequente", None)
+        listeSoucatFrequent = request.form.getlist("souscategorieFrequente", None)
+        # récupérer les caracteristiques physiques
+        listePhysique = request.form.getlist("physique", None)
 
 
 #---OBJETS TEMPORAIRE POUR PERSISTER LES DONNEES---------#
@@ -826,17 +1307,31 @@ def creer_registre(idPersonne):
             #on ajoute la liste à la liste globale
             listeGlobaleTemporaireLieuxD.append(listeTemporaireLieuDeclare)
 
-        # on déclare une liste vide qui récupère toutes les listes des élements du lieuDeclarés [ [lieuD, lieuN, Date, Type], [lieuD, lieuN, Date, Type] ]
+        # on déclare une liste vide qui récupère toutes les listes qui regroupe des categories et des sous-categories. exemple <class 'list'>: [['acrobatie', 'jongleur'], ['acrobatie', 'sauteur/danseur'],]
         listeGlobaleTemporaireCatSoucat = []
 
-        # boucke sur la taille de la liste. définit la taille de la liste listeLabelLieuDeclare qui est la même que celle des autres listes des lieuxDeclarées
-        for i in range(0, len(listeCategories)):
-            # déclare une liste pour un seul regroupement qui comprend une catégorie et une sous-catégorie
-            listeTemporaireCatSoucat = []
-            listeTemporaireCatSoucat.append(listeCategories[i])
-            listeTemporaireCatSoucat.append(listeSoucategories[i])
-            # on ajoute la liste à la liste globale
-            listeGlobaleTemporaireCatSoucat.append(listeTemporaireCatSoucat)
+        if len(listeSoucategories) != len(listeCategories):
+            erreurs.append(
+                "Veuillez vérifier les categories et les sous-categories de métiers que vous avez selectionnées")
+        else:
+            # boucke sur la taille de la liste. définit la taille de la liste listeCategories
+            for i in range(0, len(listeCategories)):
+                # déclare une liste pour un seul regroupement qui comprend une catégorie et une sous-catégorie
+                listeTemporaireCatSoucat = []
+                listeTemporaireCatSoucat.append(listeCategories[i])
+                listeTemporaireCatSoucat.append(listeSoucategories[i])
+                # on ajoute la liste à la liste globale
+                listeGlobaleTemporaireCatSoucat.append(listeTemporaireCatSoucat)
+
+        # on déclare une liste vide qui récupère toutes les listes qui regroupe metiers, categories et sous-categories fréquent
+        #  exemple <class 'list'>:[['Musicien', 'spectacle musical', 'musicien'], ['Voltigeur', 'acrobatie', "voltigeur / artiste d'agilité"], ['Figuriste', 'monstration de cires / plâtres / bois', '']]
+        listeGlobaleTemporaireMetierCatSoucat = []
+        for i in range (0, len(listeMetiersFrequent)):
+            listeTemporaireMetierCatSoucat =[]
+            listeTemporaireMetierCatSoucat.append(listeMetiersFrequent[i])
+            listeTemporaireMetierCatSoucat.append(listeCatFrequent[i])
+            listeTemporaireMetierCatSoucat.append(listeSoucatFrequent[i])
+            listeGlobaleTemporaireMetierCatSoucat.append(listeTemporaireMetierCatSoucat)
 
         registreTemporaire["nomOrigine"]=nomOrigine
         registreTemporaire["prenomOrigine"] = prenomOrigine
@@ -857,136 +1352,180 @@ def creer_registre(idPersonne):
         registreTemporaire["cote"] = cote
         registreTemporaire["natureDoc"] = natureDoc
         registreTemporaire["nrOrdre"] = nrOrdre
-        registreTemporaire["photoArchive"] = photoArchive
         registreTemporaire["commentaires"] = commentaires
-        registreTemporaire["borgne"] = borgne
-        registreTemporaire["aveugle"] = aveugle
-        registreTemporaire["culJatte"] = culJatte
-        registreTemporaire["unijambiste"] = unijambiste
-        registreTemporaire["manchot"] = manchot
-        registreTemporaire["ampute"] = ampute
-        registreTemporaire["cicatrice"] = cicatrice
-        registreTemporaire["verole"] = verole
-        registreTemporaire["autreCaracteristiques"] = autreCaracteristiques
         registreTemporaire["lieuPassage"] = lieuEnregistrementComplet
         registreTemporaire["dateEnregistremnt"] = dateEnregistremnt
+        # ajoute au dictionnaire la liste des photos
+        registreTemporaire["photoArchive"] = listePhotoArchive
         # ajoute au dictionnaire la liste gloable des lieux déclarés
         registreTemporaire["lieuxDeclares"] = listeGlobaleTemporaireLieuxD
         # ajoute au dictionnaire la liste des identifiants des personnes qui voyagent avec le registre
         registreTemporaire["voyageAvec"] = listePersonnesAccompagnantes
+        # ajoute au dictionnaire une liste qui contient des listes avec une categorie et une sous-categorie
         registreTemporaire["catSoucat"] = listeGlobaleTemporaireCatSoucat
+        # ajoute au dictionnaire la liste des listes des metiers categories, souscategories fréquent
+        registreTemporaire["metiersCatSoucatFrequent"] = listeGlobaleTemporaireMetierCatSoucat
+        #ajoute au dictionnaire la liste des caractéristiques physiques normalisées
+        registreTemporaire["physiqueNormalise"] = listePhysique
 
 
- #      LIEUX DECLARES         #
-
-        # transforme le str du lieu de passage (enregisrtement) en liste et récupère uniquement l'id (le dernier élément de la liste)
+ #--------LIEUX DECLARES--------#
+        # transforme le str du lieu de passage (enregistrement) en liste et récupère uniquement l'id (le dernier élément de la liste)
         lieuEnregistrementListe = lieuEnregistrementComplet.split(",")
         id_lieuPassage = lieuEnregistrementListe[-1]
-
+        #crée un objet lieu décalré pour l'enregistrement
         lieuEnregistrement = LieuDeclare(
-            labelLieuDeclare=lieuEnregistrementComplet,
+            labelLieuDeclare=lieuEnregistrementListe[0],
             id_lieu=id_lieuPassage,
             date=dateEnregistremnt,
             typeLieu="Enregistrement")
-        # on ajoute l'objet à la liste d'objets déclarés
+
+        # on ajoute l'objet lieuEnregistrement à la liste d'objets déclarés
         listeObjet_lieuDeclare.append(lieuEnregistrement)
 
-        # utilisation de la méthode genrateObjetLieuxDeclare pour créer des objets Lieux déclarés
+        # utilisation de la méthode genrateObjetLieuxDeclare pour créer des objets Lieux déclarés pour les autres lieux
         genrateObjetLieuxDeclare(labelLieuNormaliseHtml, listeDate, listeLabelLieuDeclare, listeObjet_lieuDeclare,
                                  listeTypeLieu)
 
+#--------- ANNEES NAISSANCE CALCULEE, VOYAGE AVEC, PHOTOS, EPOUX  -------#
 
-#--------- ANNEES NAISSANCE CALCULEE, VOYAGE AVEC, EPOUX  -------#
-
-        if agePersonne:
+        if agePersonne and dateEnregistremnt:
             anneeNaissCalcule = int(dateEnregistremnt.split("-")[0]) - int(agePersonne)
         else:
             anneeNaissCalcule = None
 
-        # on définit la taille de la liste des identifiants des personnes accompagnantes
-        generatObjeteVoyageAvec(listeObjetsVoyageAvec, listePersonnesAccompagnantes)
+        if listePersonnesAccompagnantes:
+            for idPersonneAccompagnante in listePersonnesAccompagnantes :
+                personneCompagne = Personne.query.get(idPersonneAccompagnante)
+                if personneCompagne:
+                    # utilisation de la mérthode generateObjectVoyageAvec pour créer des objects voyageAvec
+                    objectVoyageAvec = VoyageAvec(id_personne=personneCompagne.id)
+                    listeObjetsVoyageAvec.append(objectVoyageAvec)
+
+                else:
+                    erreurs.append(
+                        "L'un des identifiants des compagnons de la personne n'existe pas. Vérifier la rubrique 'Ajouter des éléments sur les personnes d'accompagnement' ")
+
+        if listePhotoArchive:
+            for photo in listePhotoArchive:
+                # pour chaque nom de photo de la liste, on crée un objet Photo et on le rajoute à la liste d'objets photos
+                objetPhoto = Photo(label_photo=photo)
+                listeObjetsPhotos.append(objetPhoto)
 
         if epoux=="on":
             epoux=1
         else:
             epoux=0
 
- # ------ CARACTERISTIUQES PHYSIQUES------##
+        # ------ CARACTERISTIUQES PHYSIQUES------##
+        if listePhysique:
+            for physique in listePhysique:
+                objetPhysique = CaracteristiquePhysique(labelCaracteristique=physique)
+                listeObjetCaracteristiques.append(objetPhysique)
 
-        # récupérer les caracteristiques physiques
-
-        if borgne == "on" :
-            objetCaracteristique=CaracteristiquePhysique(labelCaracteristique="borgne")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if aveugle == "on" :
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="aveugle")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if culJatte == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="cul-de-jatte")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if unijambiste == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="unijambiste")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if manchot == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="manchot")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if ampute == "on" :
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="amputé mains, doigts, pieds")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if cicatrice == "on" :
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="cicatrice")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if verole == "on" :
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="vérole")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-
-        if autreCaracteristiques == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="autres caractéristiques")
-            listeObjetCaracteristiques.append(objetCaracteristique)
+        # si le champs caractéristiques physiques déclarés n'est pas saisi on enregistre dans la base la valeur de car phys normalisées
+        if caracteristiquesPhysiques == "" and listePhysique:
+            caracteristiquesPhysiques = ", ".join(listePhysique)
 
 
-# ----- METIERS --------##
+        # ----- METIERS FREQUENTS --------##
+
+        labelMetierFrequent=""
+        #reprend le label des metiers fréquents pour les traiter séparément sous la forme d'une str, la concaténer avec le metier déclarés pour l'enregistre dans un seul champs
+        for metierFrequent in listeMetiersFrequent:
+            if labelMetierFrequent != "":
+                labelMetierFrequent = labelMetierFrequent + ", " + metierFrequent
+            else:
+                labelMetierFrequent = metierFrequent
+
+        # ----- Profession d'origine: variations --------##
+        #si le metier fréquent et professionOrigine existent il faut contactener les deux avec le point (.) comme séparateur
+        if labelMetierFrequent != "" and professionOrigine != "":
+            professionOrigine = labelMetierFrequent + ", " + professionOrigine
+        elif labelMetierFrequent != "":
+            professionOrigine = labelMetierFrequent
+        else:
+            professionOrigine=professionOrigine
+
+
+        #les catégories fréquentes
+        for i, categorieFrequent in enumerate(listeCatFrequent):
+            if categorieFrequent != "":
+                objectCategorieFrec = Categorie.query.filter_by(labelCategorie=categorieFrequent).first()
+                # remplace le label de la categorie par l'id
+                listeCatFrequent[i] = objectCategorieFrec.id
+
+        #les souscategories fréquents
+        for i, souscategorieFrequent in enumerate(listeSoucatFrequent):
+            if souscategorieFrequent != "":
+                objectsousCategorieFrec = Souscategorie.query.filter_by(labelSouscategorie=souscategorieFrequent).first()
+                # remplace le label de la souscategorie par l'id
+                listeSoucatFrequent[i] = objectsousCategorieFrec.id
+            else:
+                #si la soucategorie n'existe pas, on remplace par None
+                listeSoucatFrequent[i] = None
+
+
+        # si la taille de la liste categorie est egale à celle de la sous-categorie, on appelle la méthode generateObjectCategorie pour la creation des objets categories
+        if len(listeCatFrequent) == len(listeSoucatFrequent):
+            generateObjectCategorie(listeCatFrequent, listeObjetsMetiers, listeSoucatFrequent)
+        else:
+            erreurs.append(
+                "Veuillez vérifier les categories et les sous-categories de métiers que vous avez selectionnées")
+
+# ----- METIERS DECLARES--------##
 
         # remplace les labels de deux listes par les id correspondants dans la base
         for i, categorie in enumerate(listeCategories):
-            if categorie != "" and categorie != 'aucune':
+            if categorie != "":
                 objectCategorie = Categorie.query.filter_by(labelCategorie=categorie).first()
                 # remplace le label de la categorie par l'id
                 listeCategories[i] = objectCategorie.id
 
         for i, souscategorie in enumerate(listeSoucategories):
-            if souscategorie != "" and souscategorie != 'aucune':
+            if souscategorie != "":
                 objetSouscategorie = Souscategorie.query.filter_by(labelSouscategorie=souscategorie).first()
                 # remplace le label de la souscategorie par l'id sinon, rajoute None
                 listeSoucategories[i] = objetSouscategorie.id
             else:
+                # si la soucategorie n'existe pas, on remplace par None
                 listeSoucategories[i] = None
+        # si la taille de la liste categorie est egale à celle de la sous-categorie, on appelle la méthode pour la creation des objets categories
+        if len(listeCategories) == len(listeSoucategories):
+            generateObjectCategorie(listeCategories, listeObjetsMetiers, listeSoucategories)
+        else:
+            erreurs.append(
+                "Veuillez vérifier les categories et les sous-categories de métiers que vous avez selectionnées")
 
-        generateObjectCategorie(listeCategories, listeObjetsMetiers, listeSoucategories)
+        # ----- AUTHORSPHIP --------##
+        listeAuthorshipRegistre = []
+        # users
+        if current_user.is_authenticated:
+            # retourne l'id de l'utilisateur connecté
+            userID = current_user.get_id()
 
+            authorshipRegistre = AuthorshipRegistre(user_id=userID, role="creator")
+            listeAuthorshipRegistre.append(authorshipRegistre)
 
         #------TESTS ET CONTROLS-------#
 
         if listeTypeLieu.count("Naissance") > 1 \
             or listeTypeLieu.count("Domicile") > 1 \
-            or listeTypeLieu.count("Délivrance du passeport") > 1 \
             or listeTypeLieu.count("Dernier Passage") > 1 \
-            or listeTypeLieu.count("Décès") > 1 \
-            or listeTypeLieu.count("Destination") > 1:
-            erreurs.append("Les lieux de type Naissance, Domicile, Délivrance du passeport, Dernier Passage, Destination Décès doivent figurer une seule fois")
+            or listeTypeLieu.count("Décès") > 1 :
+            erreurs.append("Les lieux du type 'Naissance', 'Domicile', 'Dernier Passage', 'Décès' doivent figurer une seule fois")
 
         if lieuEnregistrementComplet == "":
-            erreurs.append("Le lieu d'enregistrement est obligatoire. Vérifiez la rubrique 'Ajouter les élements d'identification'")
+            erreurs.append("Le lieu d'enregistrement est obligatoire. Vérifiez la rubrique 'Ajouter les éléments d'identification'")
 
-        if dateEnregistremnt =="":
-            erreurs.append("La date est obligatoire. Vérifiez la rubrique 'Ajouter les élements d'identification'")
+        if dateEnregistremnt == "":
+            erreurs.append("La date d'enregistrement est obligatoire. Vérifier la rubrique 'Ajouter les éléments d'identification")
+        else:
+            # appelle la méthode validate pour valider le format de date
+            formatDateStatus = validate(dateEnregistremnt)
+            if formatDateStatus == False:
+                erreurs.append(
+                    "Format de date incorrect. Resaisir selon le modèle JJ-MM-AAAA dans 'Ajouter les éléments d'identification'")
 
         if len(erreurs) > 0 :
 
@@ -997,7 +1536,6 @@ def creer_registre(idPersonne):
         else:
 
             status, data = DetailRegistre.create_register(
-                # récupère le "nom", "prenom", etc dans la valeur de l'attribut name de la balise html <input>, <textatrea> ou <select>
                 id_personne=idPersonne,
                 nomOrigine=nomOrigine,
                 prenomOrigine=prenomOrigine,
@@ -1019,16 +1557,25 @@ def creer_registre(idPersonne):
                 cote=cote,
                 natureDoc=natureDoc,
                 nrOrdre=nrOrdre,
-                photoArchive=photoArchive,
+                collecte=collecte,
                 commentaires=commentaires,
+                photos=listeObjetsPhotos,
                 lieuxDeclares = listeObjet_lieuDeclare,
                 liensCategories=listeObjetsMetiers,
                 caracteristiques=listeObjetCaracteristiques,
-                voyageAvecRegistre=listeObjetsVoyageAvec)
+                voyageAvecRegistre=listeObjetsVoyageAvec,
+                authorshipRegistres=listeAuthorshipRegistre)
 
             if status is True:
+               #récupère l'objet registre qu'on vient de créer
+               newregister = db.session.query(DetailRegistre).order_by(DetailRegistre.id.desc()).first()
                flash("Création d'un nouveau registre réussie !", "success")
-               return redirect("/personne/"+str(idPersonne))
+
+               # initialise à vide la variable statique de la class dataCache pour relancer la requête en bdd lors de l'appel de la route index.
+               # cela permet de mettre à jours le nombre de registre de la personne dans l'index.
+               dataCache.listePersonnes = []
+
+               return redirect("/registre/"+str(newregister.id))
 
             else:
                flash("La création d'un nouvel enregistrement a échoué pour les raisons suivantes : " + ", ".join(data), "error")
@@ -1038,10 +1585,13 @@ def creer_registre(idPersonne):
                                personneUnique=personneUnique,
                                lieux=listeNomLieu,
                                categories=categories,
-                               typeDocument=typeDocument,
+                               typeDocument=listeTypeDocument,
                                listeNomsArchive=listeNomsArchive,
                                registreTemporaire=registreTemporaire,
-                               listeTypeLieux=listeTypeLieux
+                               listeTypeLieux=listeTypeLieux,
+                               listeMetiersCourants=listeMetiersCourants,
+                               lastRecord=lastRecord,
+                               caracteristiquesPysiques=caracteristiquesPysiques
                                )
 
 @appli.route("/modifier-registre/<int:id_registre>", methods=["GET", "POST"])
@@ -1059,11 +1609,18 @@ def modifier_registre(id_registre):
     # recupération de la liste des lieux (table lieux) pour assurer l'automplete dans l'input HTML des lieux. on passe le nom en français, le département, le pays et l'id du lieu. Résultat du type: ['Varsovie, Warszawa, Pologne, 1', 'Mińsk Mazowiecki, Powiat miński, Pologne, 2', 'Sétif, Algérie, 3', 'Oran, Algérie, 4']
     listeNomLieu = extractLieuxComplet()
 
-    # recupération de la liste des catégories professionnemmes pour les passer dans l'input HTML à la création du métier
+    # recupération de la liste des catégories professionnemmes pour les passer dans l'input HTML à la modification du métier
     listeObjetscategories = Categorie.query.all()
+    # recupération de la liste des caracteristiques physiques pour les passer dans l'input HTML
+    caracteristiquesPys = db.session.query(CaracteristiquePhysique.labelCaracteristique).distinct().all()
+    caracteristiquesPysiques = sorted(caracteristiquesPys, key=sortByPhysique)
 
-    # on fournit une liste (en dur) avec les types de documents pour l'autocomplete. A mettre à jour si un nouveau type de document est proposé
-    typeDocument = ['Registre visas', 'Souches passeports', 'Liste passeports', 'Passeports']
+    # on fournit une liste avec les types de documents pour l'autocomplete. A mettre à jour si un nouveau type de document est proposé
+    listeTypeDocument = []
+    typeDocument = db.session.query(DetailRegistre.natureDoc).distinct().all()
+    for typeDoc in typeDocument:
+        if typeDoc[0] is not None:
+            listeTypeDocument.append(typeDoc[0])
 
     # on fournit une liste (extraction depuis la bdd) avec le nom des archives pour l'autocomplete.
     nomsArchive = db.session.query(DetailRegistre.nomArchive).distinct().all()
@@ -1081,7 +1638,14 @@ def modifier_registre(id_registre):
     #  Methode GET: renvoie les informations uniques de la personne dans le formulaire   #
     ######################################################################################
     if request.method == "GET":
-        return render_template("modification_registre.html", registre_origine=registre_origine,lieux=listeNomLieu,listeObjetscategories=listeObjetscategories, typeDocument=typeDocument, listeNomsArchive=listeNomsArchive, listeTypeLieux=listeTypeLieux)
+        return render_template("modification_registre.html",
+                               registre_origine=registre_origine,
+                               lieux=listeNomLieu,
+                               listeObjetscategories=listeObjetscategories,
+                               typeDocument=listeTypeDocument,
+                               listeNomsArchive=listeNomsArchive,
+                               listeTypeLieux=listeTypeLieux,
+                               caracteristiquesPysiques=caracteristiquesPysiques)
 
     ######################################################################################
     #      Méthode POST: récupère les informations saisies pour chaque régistre         #
@@ -1093,6 +1657,7 @@ def modifier_registre(id_registre):
         listeObjetsMetiers = []
         listeObjetCaracteristiques = []
         listeObjetsVoyageAvec = []
+        listeObjetsPhotos = []
 
 
  #      LIEUX DECLARES         #
@@ -1104,31 +1669,53 @@ def modifier_registre(id_registre):
         lieuEnregistrementListe = lieuEnregistrementComplet.split(",")
         # on récupère le dernière de la liste, l'id du lieu
         id_lieuPassage = lieuEnregistrementListe[-1]
-        #on recupère le contenu du chamo date
+        #on recupère le contenu du champ date
         dateEnregistremnt = request.form.get("datePassage", None)
         if lieuEnregistrementComplet == "":
-            erreurs.append("Le lieu d'enregistrement est obligatoire. Vérifiez la rubrique 'Ajouter les élements d'identification'")
+            erreurs.append("Le lieu d'enregistrement est obligatoire. Vérifiez la rubrique 'Modifier les éléments d'identification'")
 
-        if dateEnregistremnt =="":
-            erreurs.append("La date est obligatoire. Vérifiez la rubrique 'Modifier les élements d'identification'")
+        if dateEnregistremnt == "":
+            erreurs.append("La date d'enregistrement est obligatoire. Vérifiez la rubrique 'Modifier les éléments d'identification'")
 
         else:
-            # si les tests sont propres, on génère un objet LieuDeclare pour le lieu d'enregistrement et un avec un lieu déclaré
-            lieuEnregistrement = LieuDeclare(
-                labelLieuDeclare=lieuEnregistrementListe[0],# le premier de la liste pour le label du lieu déclaré
-                id_lieu=id_lieuPassage,
-                date=dateEnregistremnt,
-                typeLieu="Enregistrement")
-            # on ajoute l'objet à la liste d'objets déclarés
-            listeObjet_lieuDeclare.append(lieuEnregistrement)
+            # appelle la méthode validate pour valider le format de date
+            formatDateStatus = validate(dateEnregistremnt)
+            if formatDateStatus == False:
+                erreurs.append("Format de date incorrect. Resaisir selon le modèle JJ-MM-AAAA dans 'Modifier les éléments d'identification'")
+            else:
+                # si les tests sont propres, on génère un objet LieuDeclare pour le lieu d'enregistrement et un avec un lieu déclaré
+                lieuEnregistrement = LieuDeclare(
+                    labelLieuDeclare=lieuEnregistrementListe[0],# le premier de la liste pour le label du lieu déclaré
+                    id_lieu=id_lieuPassage,
+                    date=dateEnregistremnt,
+                    typeLieu="Enregistrement")
+                # on ajoute l'objet à la liste d'objets déclarés
+                listeObjet_lieuDeclare.append(lieuEnregistrement)
 
         # recupère une liste avec tous les lieux normalisés
         labelLieuNormaliseHtml = request.form.getlist("listeLieuNormal", None)
         # recupère une liste avec tous les labels des lieux déclarés
         listeLabelLieuDeclare = request.form.getlist("listeLieuDeclare", None)
+
         # récupère une liste avec toutes les dates
         listeDate = request.form.getlist("listeDates", None)
-        # récupère une liste avec tous les types de lieux
+
+        for i in range (0,len(listeDate)):
+            # si les dates sont saisies
+            if listeDate[i] != "":
+                # vérifie le format des dates
+                formatStatusDate = validate(listeDate[i])
+                # si le format est invalide, renvoie une erreur
+                if formatStatusDate == False:
+                    erreurs.append(
+                         "Format de date incorrect. Resaisir selon le modèle JJ-MM-AAAA dans 'Modifier les lieux et les dates de passage de la personne'")
+                #sinon on change pas la liste
+                else:
+                    listeDate=listeDate
+            else:
+                listeDate = listeDate
+
+    # récupère une liste avec tous les types de lieux
         listeTypeLieu = request.form.getlist("listeTypeLieu", None)
 
         # utilisation de la méthode genrateObjetLieuxDeclare pour créer des objets Lieux déclarés
@@ -1150,64 +1737,56 @@ def modifier_registre(id_registre):
         else:
             taillePersonne = taillePersonneHTML
 
-        # récupération une liste avec tous les identifiants des personnes qui voyagent avec la personne du registre
+#-------- VOYAGE AVEC ID PERSONNE -----------#
         listePersonnesAccompagnantes = request.form.getlist("voyageAvecIdPers", None)
 
-        # on définit la taille de la liste des identifiants des personnes accompagnantes
-        generatObjeteVoyageAvec(listeObjetsVoyageAvec, listePersonnesAccompagnantes)
+        if listePersonnesAccompagnantes:
+            for idPersonneAccompagnante in listePersonnesAccompagnantes:
+                personneCompagne = Personne.query.get(idPersonneAccompagnante)
+                if personneCompagne:
+                    # utilisation de la mérthode generateObjectVoyageAvec pour créer des objects voyageAvec
+                    objectVoyageAvec = VoyageAvec(id_personne=personneCompagne.id)
+                    listeObjetsVoyageAvec.append(objectVoyageAvec)
 
-# ------Archives et cotes
+                else:
+                    erreurs.append(
+                        "L'un des identifiants des compagnons de la personne n'existe pas. Vérifier la rubrique 'Modifier les éléments sur les personnes d'accompagnement' ")
+
+# -------- PHOTOS -----------#
+        listePhotoArchive = request.form.getlist("photo", None)
+        if listePhotoArchive:
+            for photo in listePhotoArchive:
+                # pour chaque nom de photo de la liste, on crée un objet Photo et on le rajoute à la liste d'objets photos
+                objetPhoto = Photo(label_photo=photo)
+                listeObjetsPhotos.append(objetPhoto)
+
+
+ # ------Archives et cotes
         nomArchive = request.form.get("archive", None)
         if nomArchive == '':
             erreurs.append(
-                "Le nom de l'institution d'archive à l'origine de la notice est obligatoire. Vérifier la rubrique 'Ajouter les sources d'archives'")
+                "Le nom de l'institution d'archive à l'origine de la notice est obligatoire. Vérifier la rubrique 'Modifier les sources d'archives'")
 
         cote = request.form.get("cote", None)
         if cote == '':
             erreurs.append(
-                "La côte d'archive à l'origine de la notice est obligatoire. Vérifier la rubrique 'Ajouter les sources d'archives'")
+                "La côte d'archive à l'origine de la notice est obligatoire. Vérifier la rubrique 'Modifier les sources d'archives'")
 
 #------ CARACTERISTIUQES PHYSIQUES    -----##
 
         # récupérer les caracteristiques physiques
-        borgne = request.form.get("borgne", None)
-        if borgne == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="borgne")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        aveugle = request.form.get("aveugle", None)
-        if aveugle == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="aveugle")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        culJatte = request.form.get("cul-de-jatte", None)
-        if culJatte == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="cul-de-jatte")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        unijambiste = request.form.get("unijambiste", None)
-        if unijambiste == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="unijambiste")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        manchot = request.form.get("manchot", None)
-        if manchot == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="manchot")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        ampute = request.form.get("ampute", None)
-        if ampute == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="amputé mains, doigts, pieds")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        cicatrice = request.form.get("cicatrice", None)
-        if cicatrice == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="cicatrice")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        verole = request.form.get("verole", None)
-        if verole == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="vérole")
-            listeObjetCaracteristiques.append(objetCaracteristique)
-        autreCaracteristiques = request.form.get("autreCaracteristiques", None)
-        if autreCaracteristiques == "on":
-            objetCaracteristique = CaracteristiquePhysique(labelCaracteristique="autres caractéristiques")
-            listeObjetCaracteristiques.append(objetCaracteristique)
+        listePhysique = request.form.getlist("physique", None)
+        if listePhysique:
+            for physique in listePhysique:
+                objetPhysique = CaracteristiquePhysique(labelCaracteristique=physique)
+                listeObjetCaracteristiques.append(objetPhysique)
 
-# ----- METIERS --------##
+        caracteristiquesPhysiques=request.form.get("carrPhys", None)
+        # si le champs caractéristiques physiques déclarés n'est pas saisi on enregistre dans la base la valeur de car phys normalisées
+        if caracteristiquesPhysiques == "" and listePhysique:
+            caracteristiquesPhysiques = ", ".join(listePhysique)
+
+        # ----- METIERS --------##
 
         # récupere les categories et les souscategories
         listeCategories = request.form.getlist("cat", None)
@@ -1230,7 +1809,26 @@ def modifier_registre(id_registre):
 
         generateObjectCategorie(listeCategories, listeObjetsMetiers, listeSoucategories)
 
-        # En cas d'erreurs
+# ------AUTHORSHIP-------#
+        listeAuthorshipRegistre = []
+        # users
+        if current_user.is_authenticated:
+            # cherche l'utilisateur dans la base de données.
+            # Le username et le password de l'utilisateur sont fournis avec le formulaire
+            userID = current_user.get_id()
+
+            authorshipRegistre = AuthorshipRegistre(user_id=userID, role="contributor")
+            listeAuthorshipRegistre.append(authorshipRegistre)
+
+# ------TESTS ET CONTROLS-------#
+
+        if listeTypeLieu.count("Naissance") > 1 \
+                or listeTypeLieu.count("Domicile") > 1 \
+                or listeTypeLieu.count("Dernier Passage") > 1 \
+                or listeTypeLieu.count("Décès") > 1:
+            erreurs.append("Les lieux du type 'Naissance', 'Domicile', 'Dernier Passage', 'Décès' doivent figurer une seule fois")
+
+        # En cas d'erreursa
         if len(erreurs) > 0:
             flash("La modification a échoué pour les raisons suivantes : " + ", ".join(set(erreurs)),
                   "error")
@@ -1253,34 +1851,37 @@ def modifier_registre(id_registre):
                 dureeSejour=request.form.get("duree", None),
                 description=request.form.get("description", None),
                 accompagnePar=request.form.get("accompagnePar", None),
-                caracteristiquesPhysiques= request.form.get("carrPhys", None),
+                caracteristiquesPhysiques= caracteristiquesPhysiques,
                 autresCaracteristiques= request.form.get("autreCarr", None),
                 epoux=request.form.get("epoux", None),
                 nbEnfants=request.form.get("nbEnfants", None),
                 nbAutreMembre=request.form.get("nbAutreMembre", None),
                 nbPersSupplement=request.form.get("nbAutrePers", None),
                 pseudonyme= request.form.get("pseudo", None),
+                collecte= request.form.get("collecte", None),
                 nomArchive=nomArchive,
                 cote=cote,
                 natureDoc=request.form.get("typeDoc", None),
                 nrOrdre=request.form.get("ordre", None),
-                photoArchive=request.form.get("photo", None),
+                photos=listeObjetsPhotos,
                 commentaires= request.form.get("commentaires", None),
                 lieuxDeclares=listeObjet_lieuDeclare,
                 voyageAvecRegistre=listeObjetsVoyageAvec,
                 caracteristiques=listeObjetCaracteristiques,
-                liensCategories=listeObjetsMetiers
+                liensCategories=listeObjetsMetiers,
+                authorshipRegistres=listeAuthorshipRegistre
             )
             if status is True:
                 flash("Modification du registre réussie !", "success")
-                return redirect(url_for('notice',identifier=idPersonne))
+                return redirect(url_for('registre',identifier_registre=id_registre))
             else:
                 flash("La modification a échoué pour les raisons suivantes : " + ", ".join(data),
                       "error")
                 return render_template("modification_registre.html", registre_origine=registre_origine,
                                        lieux=listeNomLieu, listeObjetscategories=listeObjetscategories,
-                                       typeDocument=typeDocument, listeNomsArchive=listeNomsArchive,
-                                       listeTypeLieux=listeTypeLieux)
+                                       typeDocument=listeTypeDocument, listeNomsArchive=listeNomsArchive,
+                                       listeTypeLieux=listeTypeLieux,
+                                       caracteristiquesPysiques=caracteristiquesPysiques)
 
 @appli.route("/supprimerPers/<int:nr_personne>")
 @login_required
@@ -1293,7 +1894,16 @@ def deletePers(nr_personne):
         for personneAccompagnant in personne.voyageAvecPers:
             VoyageAvec.delete_voyageAvec(personneAccompagnant.id)
 
+        for auteur in personne.authorshipPers:
+            AuthorshipPersonne.delete_authorsphiPers(auteur.id)
+
+
     Personne.supprimer_personne(id_personne=nr_personne)
+
+    # initialise à vide la variable statique de la class dataCache pour relancer la requête en bdd lors de l'appel de la route index.
+    #cela permet de mettre à jours les liste de personnes dans l'index.
+    dataCache.listePersonnes = []
+
     flash("Suppression réussie !", "success")
     return redirect("/index")
 
@@ -1321,13 +1931,25 @@ def deleteRegister(id_registre):
         for persVogayeAvec in registre.voyageAvecRegistre:
             VoyageAvec.delete_voyageAvec(persVogayeAvec.id)
 
+        for auteur in registre.authorshipRegistres:
+            AuthorshipRegistre.delete_authorsphiRegistre(auteur.id)
+
+        for photo in registre.photos:
+            Photo.delete_photos(photo.id)
 
         DetailRegistre.supprimer_registre(id_registre=id_registre)
+
+        # initialise à vide la variable statique de la class dataCache pour relancer la requête en bdd lors de l'appel de la route index.
+        #cela permet de mettre à jours les liste du nombre de registre par personnes dans l'index.
+        dataCache.listePersonnes = []
+
         flash("Suppression de l'enregistrement réussie !", "success")
+
         return redirect("/personne/"+str(registre.id_personne))
     else:
         flash("Suppression échouée ! L'enregistrement n'existe pas", "warning")
         return redirect("/personne/" + str(registre.id_personne))
+
 
 #############################################################################
 #                             PAGES RECHERCHE DANS LA BASE                   #
@@ -1339,27 +1961,50 @@ def recherche():
     """
     motcle = request.args.get("keyword", None)
     page = request.args.get("page", 1)
-
+    titre = "Résultats de la recherche : `" + motcle + "`"
     if isinstance(page, str) and page.isdigit():
         page = int(page)
     else:
         page = 1
 
     # Création d'une liste vide de résultat (par défaut, vide si pas de mot-clé)
-    resultats = []
+    # liste du type : [(<Personne Boulan>, ["maitre d'un jeu de bagues", "joueur d'un jeu mécanique", 'joueur de chevaux de bois', "joueur d'un jeu mécanique de chevaux de bois"]), (<Personne Boulan>, ["joueur d'un jeu mécanique de chevaux de bois", 'joueur de chevaux de bois'])]
+    listePersonnesMetitersAnnee = []
 
     # cherche les mots-clés dans les champs : nom, prenom, surnom, nom en langue maternelle, pays nationalité, langue
-    # occupation(s) et description
-    titre = "Recherche"
-    if motcle :
-        resultats = db.session.query(Personne).\
-            join(DetailRegistre, Personne.id == DetailRegistre.id_personne).\
-            filter(db.or_(Personne.nom.like("%{}%".format(motcle)),Personne.prenom.like("%{}%".format(motcle)), DetailRegistre.professionOrigine.like("%{}%".format(motcle)) )).\
-            paginate(page=page, per_page=PERSONNES_PAR_PAGES)
+    # occupation(s) et description  categories = Categorie.query.all()
+    if motcle !='' :
+        # requete avec left join pour prendre en considération les personnes qui n'ont pas de registre
+        #résultat du tyoe [<Personne Boulan>, <Personne Boulan>,<Personne Boulanger>]
+        resultats = db.session.query(Personne).distinct().\
+            join(DetailRegistre, Personne.id == DetailRegistre.id_personne, isouter=True).\
+            filter(db.or_(Personne.nom.like("%{}%".format(motcle)),
+                          Personne.prenom.like("%{}%".format(motcle)),
+                          DetailRegistre.professionOrigine.like("%{}%".format(motcle)),
+                          DetailRegistre.pseudonyme.like("%{}%".format(motcle)) )).\
+            order_by(Personne.nom). \
+            order_by(Personne.prenom).\
+            all()
+
+        #requête pour obtenir la liste des metiers de chaque personne, tout registre confondu
+        for objetPersonne in resultats:
+            listeMetiers=[]
+            listeAnneeNaissance = []
+            for registre in objetPersonne.registresPers:
+                if registre.professionOrigine not in listeMetiers and registre.professionOrigine != None:
+                    listeMetiers.append(registre.professionOrigine)
+                else:
+                    pass
+                if registre.anneeNaissCalcule not in listeAnneeNaissance and registre.anneeNaissCalcule != None:
+                    listeAnneeNaissance.append(registre.anneeNaissCalcule)
+                else:
+                    pass
+
+            listePersonnesMetitersAnnee.append((objetPersonne, listeMetiers, listeAnneeNaissance))
 
     # si un résultat, renvoie sur la page résultat
-        titre = "Résultat de la recherche : `" + motcle + "`"
-        return render_template("resultats.html", resultats=resultats, titre=titre, keyword=motcle)
+    return render_template("resultats.html", personnes=listePersonnesMetitersAnnee, title=titre, keyword=motcle)
+
 
 #############################################################################
 #                             PAGES LOGIN                                  #
@@ -1426,7 +2071,7 @@ def register():
         db.session.add(user)
         db.session.commit()
 
-        flash('Félicitation, vous êtes enregistré! Maintenant vous pouvez vous connecter.', 'success')
+        flash('Félicitation, vous êtes enregisgit tré! Maintenant vous pouvez vous connecter.', 'success')
         return redirect(url_for('login'))
 
 
@@ -1438,49 +2083,3 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('intro'))
-
-@appli.route("/savePlace", methods=["POST"])
-@login_required
-def savePlace():
-    """ Route permettant à l'utilisateur de créer une notice de lieu """
-    #['Varsovie, Warszawa, Pologne, 1', 'Mińsk Mazowiecki, Powiat miński, Pologne, 2', 'Sétif, Algérie, 3', 'Oran, Algérie, 4']
-    nouveauLieuComplet = ""
-    if request.method == "POST":
-        # vérifie que l'objet envoyé depuis le client est en format json
-        if request.is_json:
-            content = request.get_json()
-            status, data = Lieu.create_lieu(
-                    # récupère les valeurs de l'objet json envoyé par l'appel POST realisé en Javascript ajax.
-                    nomLieuFr=content["nomLieu"],
-                    pays=content["pays"],
-                    region=content["region"],
-                    departement= content["depart"],
-                    codeINSEE=content["codeINSEE"],
-                    lat=content["lat"],
-                    lng=content["lng"],
-                    id_geonames=content["idGeonames"]
-                )
-
-            if status is True:
-                if data.nomLieuFr:
-                    nouveauLieuComplet= nouveauLieuComplet + data.nomLieuFr
-                if data.departement :
-                    nouveauLieuComplet = nouveauLieuComplet + ", " + data.departement
-                if data.pays:
-                    nouveauLieuComplet = nouveauLieuComplet + ", " + data.pays
-                if data.id:
-                    nouveauLieuComplet = nouveauLieuComplet + ", " + str(data.id)
-
-                succesResponse = "Création d'un nouveau lieu réussie !"
-
-                # appelle la méthode json_response avec des parametres 201, OK, le message de succes et le nom complet du lieu
-                return json_response(201,"OK", succesResponse, nouveauLieuComplet)
-
-            else:
-                # si le status est False, appelle la méthode json_response avec des parametres 202 car la requete fonctionne, mais le message KO, les messages qui indique l'echec de la creation du lieu (ex:parce que le lieu existe)
-                errorResponse ="La création d'un nouveau lieu a échoué pour les raisons suivantes : " + ", ".join(data)
-                return json_response(202, "KO", errorResponse, "")
-
-        else:
-            # si l'objet n'est pas en json, il retourne 404'
-            return json_response(404, "KO", "la requête a échoué", "")

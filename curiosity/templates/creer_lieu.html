@@ -2,7 +2,7 @@
 
 
 {% block content %}
-<form class="container" method="POST" id="creationPlaceFormId" action="{{url_for("creer_lieu")}}">
+<form class="container form-once-only" method="POST" id="creationPlaceFormId" action="{{url_for("creer_lieu")}}">
       <div class="row">
          <div class="col-12"> <header class="page-header"><h2>Page de création d'un nouveau lieu</h2></header></div>
       </div>
@@ -12,15 +12,15 @@
       </div>
      <div class="form-group">
         <label for="pays">Pays</label>
-        <input type="text" class="form-control" id="pays" name="pays" maxlength="20" placeholder="ex : France">
+        <input type="text" class="form-control" id="pays" name="pays" maxlength="64" placeholder="ex : France">
       </div>
     <div class="form-group">
         <label for="region">Région</label>
-        <input type="text" class="form-control" id="region" name="region" maxlength="20" placeholder="ex : France">
+        <input type="text" class="form-control" id="region" name="region" maxlength="64" placeholder="ex : Hauts-de-France">
       </div>
     <div class="form-group">
         <label for="depart">Département</label>
-        <input type="text" class="form-control" id="depart" name="depart" maxlength="20" placeholder="ex : France">
+        <input type="text" class="form-control" id="depart" name="depart" maxlength="64" placeholder="ex : Aisne">
       </div>
       <div class="form-group">
         <label for="lat">Latitude</label>
@@ -40,28 +40,24 @@
         <input type="text" class="form-control" id="idGeonames" name="idGeonames" maxlength="64" placeholder="ex : 2968405">
       </div>
 
-      <div id="map" style="height: 400px; width: 700px;"></div>
+      <div id="mapid" style="height: 400px; width: 700px;"></div>
 
         <button type="submit" class="btn btn-primary mt-3">Créer</button>
 </form>
 
 
   {% block scripts %}
+           {% include "includes/map.html" %}
   <script>
-    var map = L.map('map', {center: [48.69096,  9.14062],zoom: 4});
     var theMarker = {};
 
-    L.tileLayer( 'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        subdomains: ['a','b','c']
-        }).addTo( map );
-
+    // fonction qui propose un autocomplete des lieux depuis geonames
     $('#nomLieu').autocomplete({
-
     source : function(requete, reponse){ // les deux arguments représentent les données nécessaires au plugin
 	  $.ajax({
-            url : 'https://secure.geonames.org/searchJSON', // on appelle le script JSON
+            url : 'https://secure.geonames.org/searchJSON', // on appelle geonames endpoint pour le format JSON
             dataType : 'json', // on spécifie bien que le type de données est en JSON
+            //on construit le reste de la requête
             data : {
                 name_startsWith : requete.term, // on donne la chaîne de caractère tapée dans le champ de recherche Nom lieu
                 {% if current_user.username_geoname != "" %}
@@ -73,8 +69,8 @@
 
             success : function(donnee){
                 reponse($.map(donnee.geonames, function(item){
-                    return {
-                      label: item.name + (item.adminName1 ? ", " + item.adminName1 : "") + ", " + item.countryCode +", " + item.fclName, // affiche les 4 éléments: lieu, region, code pays et type lieu. Pour le département il y a une condition
+                    return {// affiche les 4 éléments: lieu, region, code pays et type lieu. Pour le département il y a une condition
+                      label: item.name + (item.adminName1 ? ", " + item.adminName1 : "") + ", " + item.countryCode +", " + item.fclName,
                                     // (item.adminName1 ? ", " + item.adminName1 : "") : si item.adminName1 (?) alors ","+ item.adminName1, sinon (:)  ""
 						value: item.name,
                         lat: item.lat,
@@ -104,14 +100,15 @@
    };
 
    function regenerateMap (lat, long) {
-       map.setView([lat, long], 10);
+       mymap.setView([lat, long], 10);
        if (theMarker != undefined) {
-           map.removeLayer(theMarker);
+           mymap.removeLayer(theMarker);
        };
-       theMarker = L.marker([lat,long]).addTo(map);
+       theMarker = L.marker([lat,long]).addTo(mymap);
    }
 
          removeEnterSubmit ("creationPlaceFormId")
+  shadeButtonSubmit ()
   </script>
   {% endblock %}
 {% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+
+      <!-- Affichage des détails des registres (class Details Registre) -->
+        <div class="container">
+
+            {% if registreUnique %}
+             <!--Titres et Boutton creation registre -->
+              <header class="page-header">
+                    {% for lieu in registreUnique.lieuxDeclares %}
+                        {% if lieu.typeLieu =="Enregistrement" %}
+                            <h3 class="pb-2 mt-3"> Notice enregistrée à <small class="text-muted">{{ lieu.lieux.nomLieuFr }} le {{ lieu.date }}</small></h3>
+                        {% endif %}
+                    {% endfor %}
+              </header>
+                      <div class="card">
+
+                            {% include 'includes/registre-unique.html' %}
+                      </div>
+
+            {% endif %}
+
+        </div>
+
+
+{% endblock %}

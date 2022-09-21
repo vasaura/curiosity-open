@@ -1,0 +1,126 @@
+
+
+
+
+<!-- zone des numéros des pages-->
+<nav aria-label="research-pagination" class="mt-4">
+      <ul class="pagination">
+          {% if personnes.has_prev %}
+             <li class="page-item">
+                 <a class="page-link"
+                         {% if title == "Index" %}
+                            href="{{ url_for('index', page=personnes.prev_num) }}"
+                         {% elif title == "persCat" %}
+                            href="{{ url_for('personne par categorie', identifier = categorie.id, page=personnes.prev_num) }}"
+                        {% elif title == "Recherche" %}
+                            href="{{ url_for('recherche', keyword=keyword, page=personnes.prev_num) }}"
+                        {% elif  title == 'personnes par sous-categorie'%}
+                            href="{{ url_for('persSousCat', identifier = soucategorie.id, page=personnes.prev_num) }}"
+                        {% elif title == "personnes accompagnées par epoux-se" %}
+                            href="{{ url_for('persEpoux', page=personnes.prev_num) }}"
+                        {% elif title == "personnes accompagnées par enfants" %}
+                            href="{{ url_for('persEnfant', page=personnes.prev_num) }}"
+                        {% elif title == "personnes par caractéristique physique"%}
+                            href="{{ url_for('persCarracteristique', label = label, page=personnes.prev_num) }}"
+                        {% elif title == "personnes par ville d'enregistrement" %}
+                            href="{{ url_for('persParPass', id_villePassage = villePassage.id, page=personnes.prev_num) }}"
+                        {% elif title == "personnes par ville de naissance" %}
+                            href="{{ url_for('persParNaissance', id_villeNaissance = villeNaissance.id, page=personnes.prev_num) }}"
+                        {% elif title == "personnes par archives" %}
+                            href="{{ url_for('persParArchives', nom_archive=nom_archive, page=personnes.prev_num) }}"
+                        {% elif title == "personnes par métier déclaré" %}
+                            href="{{ url_for('persParMetiersDeclare', label=label, page=personnes.prev_num) }}"
+                        {% elif title == "registre par cote" %}
+                            href="{{ url_for('registreParCote', cote_archive=cote_archive, page=personnes.prev_num) }}"
+                         {% elif title == "Cotes" %}
+                            href="{{ url_for('cotes', page=cotes.prev_num) }}"
+
+                         {% endif %}
+                     >Précédent
+                 </a> <!-- Le lien URL est du type http:...../index?page=2-->
+             </li>
+          {% endif %}
+
+            {% for page in personnes.iter_pages(left_current=5, right_current=5) %}
+                    {% if page %}
+                      {% if page != personnes.page %}
+                        <li class="page-item">
+                            <a class="page-link"
+                                {% if title == "Index" %}
+                               href="{{url_for("index", page=page) }}"
+                                {% elif title == "personne par categorie" %}
+                                href="{{ url_for('persCat', identifier = categorie.id, page=page) }}"
+                               {% elif title == "Recherche" %}
+                               href="{{ url_for('recherche', keyword=keyword, page=page) }}"
+                               {% elif  title == 'personnes par sous-categorie'%}
+                               href="{{ url_for('persSousCat', identifier = soucategorie.id, page=page) }}"
+                               {% elif title == "personnes accompagnées par epoux-se" %}
+                                href="{{ url_for('persEpoux', page=page) }}"
+                                {% elif title == "personnes accompagnées par enfants" %}
+                                href="{{ url_for('persEnfant', page=page) }}"
+                                {% elif title == "personnes par caractéristique physique"%}
+                                href="{{ url_for('persCarracteristique', label = label, page=page) }}"
+                               {% elif title == "personnes par ville d'enregistrement" %}
+                                href="{{ url_for('persParPass', id_villePassage = villePassage.id, page=page) }}"
+                                {% elif title == "personnes par ville de naissance" %}
+                                href="{{ url_for('persParNaissance', id_villeNaissance = villeNaissance.id, page=page) }}"
+                               {% elif title == "personnes par archives" %}
+                                href="{{ url_for('persParArchives', nom_archive=nom_archive, page=page) }}"
+                                {% elif title == "personnes par métier déclaré" %}
+                               href="{{ url_for('persParMetiersDeclare', label=label, page=page) }}"
+                               {% elif title == "registre par cote" %}
+                                href="{{ url_for('registreParCote', cote_archive=cote_archive, page=page) }}"
+                                {% elif title == "Cotes" %}
+                               href="{{ url_for('cotes', page=page) }}"
+
+                               {% endif %}
+                                >{{page}}</a>
+                        </li>
+                      {% else %}
+                        <li class="page-item active disabled">
+                          <a class="page-link">Page {{page}} <span class="sr-only">(actuelle)</span></a>
+                        </li>
+                      {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                          <a class="page-link">...</a>
+                        </li>
+                    {% endif %}
+            {% endfor %}
+
+            {% if personnes.has_next %}
+             <li class="page-item">
+                 <a class="page-link"
+                        {% if title == "Index" %}
+                    href="{{ url_for('index',  page=personnes.next_num) }}"
+                      {% elif title == "personne par categorie" %}
+                     href="{{ url_for('persCat', identifier = categorie.id, page=personnes.next_num) }}"
+                     {% elif title == "Recherche" %}
+                      href="{{ url_for('recherche', keyword=keyword, page=personnes.next_num) }}"
+                     {% elif  title == 'personnes par sous-categorie'%}
+                         href="{{ url_for('persSousCat', identifier = soucategorie.id, page=personnes.next_num) }}"
+                    {% elif title == "personnes accompagnées par epoux-se" %}
+                          href="{{ url_for('persEpoux', page=personnes.next_num) }}"
+                     {% elif title == "personnes accompagnées par enfants" %}
+                            href="{{ url_for('persEnfant', page=personnes.next_num) }}"
+                     {% elif title == "personnes par caractéristique physique"%}
+                            href="{{ url_for('persCarracteristique', label = label, page=personnes.next_num) }}"
+                     {% elif title == "personnes par ville d'enregistrement" %}
+                             href="{{ url_for('persParPass', id_villePassage = villePassage.id, page=personnes.next_num) }}"
+                     {% elif title == "personnes par ville de naissance" %}
+                            href="{{ url_for('persParNaissance', id_villeNaissance = villeNaissance.id, page=personnes.next_num) }}"
+                    {% elif title == "personnes par archives" %}
+                            href="{{ url_for('persParArchives', nom_archive=nom_archive, page=personnes.next_num) }}"
+                    {% elif title == "personnes par métier déclaré" %}
+                               href="{{ url_for('persParMetiersDeclare', label=label, page=personnes.next_num) }}"
+                    {% elif title == "registre par cote" %}
+                            href="{{ url_for('registreParCote', cote_archive=cote_archive, page=personnes.next_num) }}"
+                    {% elif title == "Cotes" %}
+                            href="{{ url_for('cotes', page=cotes.next_num) }}"
+
+                    {% endif %}
+                 >Suivant</a> <!-- Le lien URL est du type http:...../index?page=2-->
+             </li>
+          {% endif %}
+      </ul>
+</nav>

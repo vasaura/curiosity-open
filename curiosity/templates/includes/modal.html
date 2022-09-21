@@ -1,0 +1,68 @@
+ <!-- The Modal -->
+     <div class="container">
+
+        <div class="modal fade" aria-labelledby="myLargeModalLabel" id="myModalPlace" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+              <h4 class="modal-title">Création d'un nouveau lieu</h4>
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body ui-front">
+
+                <form class="container" method="POST" id="creationPlaceFormId">
+                     <div class="form-group">
+                          <label for="nomLieu">Nom du lieu <small style="color: #bd2130">(choisir l'option "city, village...")</small></label>
+                        <input type="text" class="form-control" id="nomLieu" name="nomLieu" maxlength="64" placeholder="ex : Villers-Cotterêts">
+                      </div>
+                     <div class="form-group">
+                        <label for="pays">Pays</label>
+                        <input type="text" class="form-control" id="pays" name="pays" maxlength="64" placeholder="ex : France">
+                      </div>
+                     <div class="form-group">
+                            <label for="region">Région</label>
+                            <input type="text" class="form-control" id="region" name="region" maxlength="64" placeholder="ex : Hauts-de-France">
+                          </div>
+                     <div class="form-group">
+                            <label for="depart">Département</label>
+                            <input type="text" class="form-control" id="depart" name="depart" maxlength="64" placeholder="ex : Aisne">
+                          </div>
+                     <div class="form-group">
+                        <label for="lat">Latitude</label>
+                        <input type="text" class="form-control" id="lat" name="latitude" maxlength="64" placeholder="ex : 49.25311" onchange="updateMap()">
+                      </div>
+                     <div class="form-group">
+                        <label for="lng">Longitude</label>
+                        <input type="text" class="form-control" id="lng" name="longitude" maxlength="64" placeholder="ex : 3.09003" onchange="updateMap()">
+                      </div>
+                     <div class="form-group">
+                          <label for="codeINSEE">Code INSEE (pour les localités françaises)</label>
+                          <p><small class="text-muted">(connectez-vous au <a href="https://public.opendatasoft.com/explore/dataset/correspondance-code-insee-code-postal/information/" target="_blank">site de l'INSEE)</a></small></p>
+                        <input type="text" class="form-control" id="codeINSEE" name="codeINSEE" maxlength="64" placeholder="ex : 02810">
+                      </div>
+                     <div class="form-group">
+                        <label for="idGeonames">Identifiant Geonames</label>
+                        <input type="text" class="form-control" id="idGeonames" name="idGeonames" maxlength="64" placeholder="ex : 2968405">
+                      </div>
+
+                     <div id="mapid" style="height: 400px; width: 700px;"></div>
+
+                             <!-- Modal footer -->
+                     <div class="modal-footer">
+                           <button type="button" id ="closeModal" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
+                           <button type="button" id="idBtnSavePlace" class="btn btn-primary">Sauvegarder</button>
+                     </div>
+                </form>
+
+                <div id="successAlert" class="alert alert-success" role="alert" style="display:none;"></div>
+                <div id="errorAlert" class="alert alert-danger" role="alert" style="display:none;"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>

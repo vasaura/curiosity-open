@@ -4,7 +4,7 @@
  <div class="container small">
              <!--Titres  -->
              <header class="page-header">
-                  <h3 class="pb-2 mt-3"><small class="text-muted">Glossaire de professions</small></h3>
+                  <h3 class="pb-2 mt-3"><small class="text-muted">Tableau de professions</small></h3>
              </header>
 
        <table id="curiosity" class="table" style="width:100%">
@@ -43,14 +43,6 @@
 
 
  {% block scripts %}
-     <script>
-      $(document).ready(function() {
-                $('#curiosity').DataTable( {
-                    "language": {
-                        "url": "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
-                    }
-                } );
-            } );
-     </script>
+  {% include "includes/dataTable.html" %}
 {% endblock %}
 {% endblock %}

@@ -50,12 +50,25 @@
         <table id="curiosity" class="table" style="width:100%">
           <thead>
               <tr>
-                <th>Nom du lieux</th>
+                <th>Nom du lieux normalisé</th>
                 <th>Date</th>
                 <th>Type de lieu</th>
               </tr>
           </thead>
           <tbody>
+          <tr>
+              {% if unique.lieux_naissance %}
+              <td>
+                 {{ unique.lieux_naissance.nomLieuFr  }}
+              </td>
+              <td>
+                  {{ unique.anneeNaissance }}
+              </td>
+              <td>
+                  Naissance (officiel)
+              </td>
+              {% endif %}
+          </tr>
                   {% for lieuDeclare in listeLieu %}
                         <tr>
                             {% if lieuDeclare.lieux.nomLieuFr %}
@@ -90,58 +103,25 @@
 
 
  {% block scripts %}
+     {% include "includes/dataTable.html" %}
+     {% include "includes/map.html" %}
+      <script>
 
-
-            <script>
-
-             $(document).ready(function() {
-                $('#curiosity').DataTable( {
-                    "language": {
-                        "url": "//cdn.datatables.net/plug-ins/9dcbecd42ad/i18n/French.json"
-                    }
-                } );
-            } );
-
-                var mymap = L.map('mapid').setView([46.00, 2.00], 5);
-                L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
-                   {attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-                    maxZoom: 20,
-                    id: 'mapbox/streets-v11',
-                    accessToken: 'pk.eyJ1IjoidmFzYXVyYSIsImEiOiJjazVod3drNTUwN3ZqM3BvNzcyNXQxNjg3In0.l_LUXbWkAMvNb3lttxpuEQ'
-                }).addTo(mymap);
-
-                const myCustomColour = '#981326';
-
-            const markerHtmlStyles = `
-              background-color: ${myCustomColour};
-              width: 1.8rem;
-              height: 1.8rem;
-              display: block;
-              left: -1.5rem;
-              top: -1.5rem;
-              position: relative;
-              border-radius: 3rem 3rem 0;
-              transform: rotate(45deg);
-              border: 1px solid #FFFFFF`;
-
-            const myIconBirth = L.divIcon({
-              className: "my-custom-pin",
-              iconAnchor: [0, 24],
-              labelAnchor: [-6, 0],
-              popupAnchor: [0, -36],
-              html: `<span style="${markerHtmlStyles}" />`
-            });
+            // ajouter le lieux de naissance négocié de la table personne
+                {% if unique.lieux_naissance %}
+                        L.marker([{{unique.lieux_naissance.lat}},{{unique.lieux_naissance.lng}}], {icon: myIconBirth}).bindPopup("Lieu de naissance: {{ unique.lieux_naissance.nomLieuFr}}").addTo(mymap);
+             {% endif %}
 
                 //boucle sur les toutes les villes de passage et ajouter un marqueur sur la carte
                 {% for registre in unique.registresPers %}
                     {% for lieuDeclare in registre.lieuxDeclares %}
-                        {% if lieuDeclare.typeLieu == "Naissance" %}
-                        L.marker([{{lieuDeclare.lieux.lat}},{{lieuDeclare.lieux.lng}}], {icon: myIconBirth}).bindPopup("Lieu de naissance: {{ lieuDeclare.lieux.nomLieuFr}}").addTo(mymap);
-                        {%  elif lieuDeclare.lieux.lat and lieuDeclare.lieux.lng %}
+                        // ajouter les marqueur seulement si le registre contient des lieux normalisés
+                        {% if lieuDeclare.lieux %}
                             L.marker([{{lieuDeclare.lieux.lat}},{{lieuDeclare.lieux.lng}}]).bindPopup("{{ lieuDeclare.lieux.nomLieuFr}}").addTo(mymap);
-                       {% endif %}
+                        {% endif %}
                     {% endfor %}
                 {% endfor %}
+
             </script>
 
         {% endblock %}

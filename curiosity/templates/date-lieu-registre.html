@@ -1,0 +1,39 @@
+{% extends "base.html" %} {% block content %}
+     <div class="container">
+      <header class="page-header">
+            <h3>Personnes qui voyagent à la même date au même lieu</h3>
+        </header>
+    <form id="voyageAvec" method="POST" action="{{ url_for("registerPerDatePlace") }}">
+     <article class="card-group-item">
+       {% for element in outputListeDateLieuRegistre %}
+     {% if element[2]|length > 1 %}
+                <header class="card-header">
+                    <h6 class="title">
+                      {{ element[0] }}, {{ element[1] }}
+                    </h6>
+                </header>
+                    {% for registre in element[2] %}
+                        <div class="card-body">
+                            <label class="form-check">
+                                 <input class="form-check-input" type="checkbox" id="persdeclares" name="persdeclares" value="{{ registre.id }}">
+                                    {{ registre.nomOrigine }}, {{ registre.prenomOrigine }},
+                                    {% for lieu in registre.lieuxDeclares %}
+                                         {% if lieu.typeLieu == "Naissance" %}
+                                             né à <small class="text-muted"> {{ lieu.lieux.nomLieuFr or ' -- ' }}</small>,
+                                        {% endif %}
+                                    {% endfor%}
+                                    {% for lieu in registre.lieuxDeclares %}
+                                        {% if lieu.typeLieu == "Domicile" %}
+                                            domicilé à :  {{ lieu.labelLieuDeclare }}
+                                        {% endif %}
+                                    {% endfor%}
+                            </label>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        </article>
+     <button type="submit" class="btn btn-info">Voyage ensemble</button>
+    </form>
+     </div>
+{% endblock %}

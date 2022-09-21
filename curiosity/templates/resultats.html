@@ -1,53 +1,30 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="container">
 
-    <h1 class="mb-2">{{titre}}</h1>
-    {% if resultats.total > 0 %}
-        <p>Il y a {{resultats.total}} notice(s) qui répond(ent) à votre requête :</p>
-        <ul>
-            {% for resultat in resultats.items %}
-                <li><a href="{{url_for("notice", identifier=resultat.id)}}">{{resultat.nom}} {{resultat.prenom}}. Id: {{resultat.id}}</a></li>
+    <div class="container">
+    {% if keyword != '' %}
+    <h3 class="mb-2">Le résultat de la recherche : {{keyword}}</h3>
+    {% if personnes|length > 0 %}
+        <p class="lead">Il y a {{personnes|length}} personnes(s) qui répond(ent) à votre requête :</p>
+        <ul class="list-group">
+            {% for resultat in personnes %}
+                <li><a href="{{url_for("notice", identifier=resultat[0].id)}}"> {{resultat[0].nom}}, {{resultat[0].prenom or ' -- '}}, (Id: {{resultat[0].id}}).</a>
+                    Né en {{ resultat[0].anneeNaissance or ' -- ' }}
+                    {% for annee in resultat[2]  %}
+                        <!-- si l'année déclaré des registres est identitique à l'année officielle de la personne, ne pas afficher l'année-->
+                        {% if annee != resultat[0].anneeNaissance %}
+                            ( {{  annee }})
+                        {% endif %}
+                      {% endfor %}
+                    à {{ resultat[0].lieux_naissance.nomLieuFr or ' -- ' }}. Metier(s): {{ resultat[1]|join(", ") or ' -- ' }}.</li>
             {% endfor %}
         </ul>
-    <nav aria-label="research-pagination">
-      <ul class="pagination">
-      {% if resultats.has_prev %}
-         <li class="page-item">
-             <a class="page-link" href="{{ url_for('recherche', keyword=keyword, page=resultats.prev_num) }}">Précédent</a> <!-- Le lien URL est du type http:...../index?page=2-->
-         </li>
-      {% endif %}
-        {%- for page in resultats.iter_pages() %}
-            {% if page %}
-
-              {% if page != resultats.page %}
-                <li class="page-item">
-                    <a class="page-link" href="{{url_for("recherche", keyword=keyword, page=page) }}">{{page}}</a>
-                </li>
-              {% else %}
-                <li class="page-item active disabled">
-                  <a class="page-link">{{page}} <span class="sr-only">(actuelle)</span></a>
-                </li>
-              {% endif %}
-
-            {% else %}
-                <li class="page-item disabled">
-                  <a class="page-link">...</a>
-                </li>
-            {% endif %}
-
-        {%- endfor %}
-        {% if resultats.has_next %}
-         <li class="page-item">
-             <a class="page-link" href="{{ url_for('recherche', keyword=keyword, page=resultats.next_num) }}">Suivant</a> <!-- Le lien URL est du type http:...../index?page=2-->
-         </li>
-      {% endif %}
-
-      </ul>
     {% else %}
-      <p class="mt-5 mb-2" style="font-size : 20px">Aucun résultat</p>
-    </nav>
+          <p class="mt-5 mb-2" style="font-size : 20px">Aucun résultat</p>
+    {% endif %}
+    {% else %}
+    <h3 class="mb-2">Vous n'avez saisi aucun mot-clé</h3>
     {% endif %}
     </div>
 {% endblock %}

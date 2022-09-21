@@ -1,0 +1,12 @@
+{% extends "base.html" %} {% block content %}
+    <div class="container">
+        <header class="page-header">
+            <h1>Archives consultées</h1>
+        </header>
+        <div class="list-group">
+            {% for eachArchive in archives %}
+            <li><a href="{{ url_for('persParArchives', nom_archive=eachArchive[0]) }}">{{ eachArchive[0] }}</a></li>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
